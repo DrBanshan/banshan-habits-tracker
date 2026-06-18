@@ -1,7 +1,7 @@
 {
   "id": "banshan-habit-tracker",
   "name": "Banshan Habit Tracker",
-  "version": "0.1.3",
+  "version": "0.1.0",
   "minAppVersion": "1.13.1",
   "description": "Track your habits with visual progress and streaks.",
   "author": "DrBanShan",
