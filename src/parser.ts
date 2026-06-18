@@ -1,4 +1,4 @@
-import yaml from 'js-yaml';
+import * as yaml from 'yaml';
 import type { App, TFile } from 'obsidian';
 import type { Tracker, Habit, CompletionMap, CompletionStatus } from './types';
 import { DEFAULT_HABITS_FILE } from './types';
@@ -67,7 +67,7 @@ export function parseTrackerFile(content: string): Tracker | null {
 
   let raw: RawYaml;
   try {
-    raw = yaml.load(yamlMatch[1]) as RawYaml;
+    raw = yaml.parse(yamlMatch[1]) as RawYaml;
   } catch {
     return null;
   }
@@ -210,19 +210,19 @@ function findMonthsWithData(completions: CompletionMap): Array<{ year: number; m
  * @param filterEmptyMonths - If true, only write months with actual data. If false, write all months from earliest data to current month.
  */
 export function generateTrackerContent(tracker: Tracker, daysToShow: number = 21, filterEmptyMonths: boolean = true): string {
-  const yamlContent = yaml.dump({
-    name: tracker.name,
-    created: tracker.created,
-    habits: tracker.habits.map(h => ({
-      name: h.name,
-      icon: h.icon,
-      frequency: h.frequency,
-      specificDays: h.specificDays,
-      streakMode: h.streakMode,
-      startDate: h.startDate,
-      color: h.color
-    }))
-  });
+  const yamlContent = yaml.stringify({
+      name: tracker.name,
+      created: tracker.created,
+      habits: tracker.habits.map(h => ({
+        name: h.name,
+        icon: h.icon,
+        frequency: h.frequency,
+        specificDays: h.specificDays,
+        streakMode: h.streakMode,
+        startDate: h.startDate,
+        color: h.color
+      }))
+    });
 
   const lines: string[] = [];
   const today = new Date();
@@ -596,7 +596,7 @@ export async function ensureDefaultTracker(app: App, habitsFilePath: string = DE
     dates.push(`${y}-${m}-${day}`);
   }
 
-  const yamlContent = yaml.dump({
+  const yamlContent = yaml.stringify({
     name: 'My Habits',
     created: new Date().toISOString().split('T')[0],
     habits: [
