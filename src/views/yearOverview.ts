@@ -25,7 +25,7 @@ export function renderYearOverview(container: HTMLElement, plugin: HabitTrackerP
   prevHabitBtn.addEventListener('click', () => {
     if (currentIndex > 0) {
       plugin.setSelectedHabit(habits[currentIndex - 1].name);
-      (plugin as any).refreshView();
+      void plugin.refreshView();
     }
   });
 
@@ -34,7 +34,7 @@ export function renderYearOverview(container: HTMLElement, plugin: HabitTrackerP
   nextHabitBtn.addEventListener('click', () => {
     if (currentIndex < habits.length - 1) {
       plugin.setSelectedHabit(habits[currentIndex + 1].name);
-      (plugin as any).refreshView();
+      void plugin.refreshView();
     }
   });
 
@@ -53,7 +53,7 @@ export function renderYearOverview(container: HTMLElement, plugin: HabitTrackerP
 
     yearButton.addEventListener('click', () => {
       plugin.setSelectedYear(year);
-      (plugin as any).refreshView();
+      void plugin.refreshView();
     });
   }
 

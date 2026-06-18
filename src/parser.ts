@@ -18,7 +18,7 @@ interface RawYaml {
 }
 
 function stripIcon(text: string): string {
-  return text.replace(/^[^\x00-\x7F]+\s*/, '');
+  return text.replace(/[\u{100}-\u{10FFFF}]+\s*/u, '');
 }
 
 function parseHabit(raw: RawYaml['habits'][0]): Habit {
@@ -487,7 +487,7 @@ export async function writeTrackerFile(app: App, path: string, tracker: Tracker,
     }
   }
 
-  await app.vault.modify(file as TFile, content);
+  await app.vault.modify(file, content);
 }
 
 /**
@@ -498,9 +498,9 @@ export async function lintHabitsFile(app: App, path: string): Promise<boolean> {
   let content: string;
   // Try vault read first (Obsidian-indexed), fall back to adapter (raw filesystem)
   const file = app.vault.getAbstractFileByPath(path);
-  let targetFile: TFile | null = file as TFile | null;
-  if (file) {
-    content = await app.vault.read(file as TFile);
+  let targetFile: TFile | null = file instanceof TFile ? file : null;
+  if (file && file instanceof TFile) {
+    content = await app.vault.read(file);
   } else {
     try {
       content = await app.vault.adapter.read(path);

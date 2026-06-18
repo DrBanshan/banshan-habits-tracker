@@ -1,4 +1,4 @@
-import { ColorComponent, Modal, Setting } from 'obsidian';
+import { App, ColorComponent, Modal, Setting } from 'obsidian';
 import type HabitTrackerPlugin from '../main';
 import { DEFAULT_COLORS } from '../types';
 import type { Frequency, StreakMode } from '../types';
@@ -7,7 +7,7 @@ export class AddHabitModal extends Modal {
   plugin: HabitTrackerPlugin;
   onSubmit: () => Promise<void>;
 
-  constructor(app: any, plugin: HabitTrackerPlugin, onSubmit: () => Promise<void>) {
+  constructor(app: App, plugin: HabitTrackerPlugin, onSubmit: () => Promise<void>) {
     super(app);
     this.plugin = plugin;
     this.onSubmit = onSubmit;
@@ -138,7 +138,7 @@ export class EditHabitModal extends Modal {
     let frequency: Frequency = habit.frequency;
     let streakMode: StreakMode = habit.streakMode;
     let specificDays: string[] = habit.specificDays || [];
-    let textInput: any;
+    let textInput: HTMLInputElement | undefined;
 
     const emojiContainer = contentEl.createDiv({ cls: 'habit-icon-picker' });
     const EMOJI_OPTIONS = ['🏃', '📖', '💧', '🧘', '💪', '🥗', '😴', '✍️', '🎵', '💊', '🌅', '🚶', '🏋️', '📝', '🧹'];
@@ -226,7 +226,7 @@ export class DeleteHabitModal extends Modal {
   habitName: string;
   onSubmit: () => Promise<void>;
 
-  constructor(app: any, plugin: HabitTrackerPlugin, habitName: string, onSubmit: () => Promise<void>) {
+  constructor(app: App, plugin: HabitTrackerPlugin, habitName: string, onSubmit: () => Promise<void>) {
     super(app);
     this.plugin = plugin;
     this.habitName = habitName;

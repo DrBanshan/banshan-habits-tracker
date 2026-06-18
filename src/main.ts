@@ -1,11 +1,21 @@
-import { Plugin, WorkspaceLeaf, PluginSettingTab, Setting } from 'obsidian';
+import { App, Plugin, WorkspaceLeaf, PluginSettingTab, Setting } from 'obsidian';
 import { HabitTrackerView, VIEW_TYPE_HABIT_TRACKER } from './view';
 import { init, loadHabits, toggleDay, addHabit, renameHabit, deleteHabit, setHabitColor, setViewType, setSelectedHabit, setSelectedMonth, setSelectedYear, clearError, setHabitsFilePath, getState, reorderHabits, updateSettings } from './store';
 import { DEFAULT_HABITS_FILE } from './types';
-import type { Habit } from './types';
+import type { Habit, ViewType } from './types';
+
+interface PluginSettings {
+  habitsFilePath: string;
+  todayViewDays: number;
+  keepDeletedData: boolean;
+  emptyTableDetection: 'onload' | 'onchange';
+  debugMode: boolean;
+}
+
+const DEFAULT_SETTINGS: PluginSettings = { habitsFilePath: DEFAULT_HABITS_FILE, todayViewDays: 7, keepDeletedData: true, emptyTableDetection: 'onload', debugMode: false };
 
 export default class HabitTrackerPlugin extends Plugin {
-  settings: { habitsFilePath: string; todayViewDays: number; keepDeletedData: boolean; emptyTableDetection: 'onload' | 'onchange'; debugMode: boolean } = { habitsFilePath: DEFAULT_HABITS_FILE, todayViewDays: 7, keepDeletedData: true, emptyTableDetection: 'onload', debugMode: false };
+  settings: PluginSettings = DEFAULT_SETTINGS;
 
   async onload(): Promise<void> {
     console.log('[HabitTracker] Loading plugin...');
@@ -68,12 +78,17 @@ export default class HabitTrackerPlugin extends Plugin {
 
   async loadSettings(): Promise<void> {
     const data = await this.loadData();
+    if (!data) {
+      this.settings = DEFAULT_SETTINGS;
+      return;
+    }
+    const safe = data as Partial<PluginSettings>;
     this.settings = {
-      habitsFilePath: data?.habitsFilePath || DEFAULT_HABITS_FILE,
-      todayViewDays: data?.todayViewDays ?? 7,
-      keepDeletedData: data?.keepDeletedData ?? true,
-      emptyTableDetection: data?.emptyTableDetection ?? 'onload',
-      debugMode: data?.debugMode ?? false
+      habitsFilePath: safe.habitsFilePath || DEFAULT_HABITS_FILE,
+      todayViewDays: safe.todayViewDays ?? 7,
+      keepDeletedData: safe.keepDeletedData ?? true,
+      emptyTableDetection: safe.emptyTableDetection ?? 'onload',
+      debugMode: safe.debugMode ?? false
     };
   }
 
@@ -92,7 +107,13 @@ export default class HabitTrackerPlugin extends Plugin {
     void this.refreshView();
   }
   getHabit(name: string) { return getState().habits.find(h => h.name === name); }
-  setViewType(viewType: string) { setViewType(viewType as any); void this.refreshView(); }
+  setViewType(viewType: string) {
+    const validTypes = ['today', 'month', 'yearOverview', 'year'] as const;
+    if (validTypes.includes(viewType as typeof validTypes[number])) {
+      setViewType(viewType as ViewType);
+    }
+    void this.refreshView();
+  }
   setSelectedHabit(habitName: string) { setSelectedHabit(habitName); void this.refreshView(); }
   setSelectedMonth(month: Date) { setSelectedMonth(month); void this.refreshView(); }
   setSelectedYear(year: number) { setSelectedYear(year); void this.refreshView(); }
@@ -106,7 +127,7 @@ export default class HabitTrackerPlugin extends Plugin {
 class HabitTrackerSettingTab extends PluginSettingTab {
   plugin: HabitTrackerPlugin;
 
-  constructor(app: any, plugin: HabitTrackerPlugin) {
+  constructor(app: App, plugin: HabitTrackerPlugin) {
     super(app, plugin);
     this.plugin = plugin;
   }

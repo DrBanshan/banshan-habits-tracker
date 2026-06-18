@@ -1,5 +1,6 @@
-import { ItemView, WorkspaceLeaf, setIcon } from 'obsidian';
+import { ItemView, TFile, WorkspaceLeaf, setIcon } from 'obsidian';
 import type HabitTrackerPlugin from './main';
+import type { Habit } from './types';
 import { renderTodayView } from './views/today';
 import { renderMonthView } from './views/month';
 import { renderYearView } from './views/year';
@@ -92,7 +93,7 @@ export class HabitTrackerView extends ItemView {
     });
   }
 
-  private updateTodayViewInPlace(habitName: string, date: string, isCompleted: boolean, habit: any): void {
+  private updateTodayViewInPlace(habitName: string, date: string, isCompleted: boolean, habit: Habit): void {
     const container = this.containerEl.children[1] as HTMLElement;
     const todaySection = container.querySelector('.today-overview');
     if (!todaySection) return;
@@ -139,9 +140,11 @@ export class HabitTrackerView extends ItemView {
       if (date === todayStr) {
         // Update inline check button in .today-card-middle
         const middleSection = card.querySelector('.today-card-middle');
-        const inlineCheckBtn = middleSection?.querySelector('[data-date="' + date + '"]') as HTMLElement;
-        if (inlineCheckBtn) {
-          const mark = inlineCheckBtn.querySelector('.today-check-mark') as HTMLElement;
+        const inlineCheckBtnEl = middleSection?.querySelector('[data-date="' + date + '"]');
+        if (inlineCheckBtnEl) {
+          const inlineCheckBtn = inlineCheckBtnEl;
+          const markEl = inlineCheckBtn.querySelector('.today-check-mark');
+          const mark = markEl ? markEl : null;
           if (mark) mark.textContent = isCompleted ? '✓' : '';
           if (isCompleted) {
             inlineCheckBtn.addClass('active');
@@ -164,9 +167,11 @@ export class HabitTrackerView extends ItemView {
 
         // Update the check button in .today-card-right
         const rightSection = card.querySelector('.today-card-right');
-        const checkBtn = rightSection?.querySelector('[data-date="' + date + '"]') as HTMLElement;
-        if (checkBtn) {
-          const mark = checkBtn.querySelector('.today-check-mark') as HTMLElement;
+        const checkBtnEl = rightSection?.querySelector('[data-date="' + date + '"]');
+        if (checkBtnEl) {
+          const checkBtn = checkBtnEl;
+          const markEl = checkBtn.querySelector('.today-check-mark');
+          const mark = markEl ? markEl : null;
           if (mark) mark.textContent = isCompleted ? '✓' : '';
           if (isCompleted) {
             checkBtn.addClass('active');
@@ -202,7 +207,7 @@ export class HabitTrackerView extends ItemView {
     });
   }
 
-  private calcStreakForDate(habit: any, dateStr: string): number {
+  private calcStreakForDate(habit: Habit, dateStr: string): number {
     const habitCompletions = this.plugin.getState().completions[habit.name];
     if (!habitCompletions || !habitCompletions[dateStr]) return 0;
     
@@ -290,7 +295,7 @@ export class HabitTrackerView extends ItemView {
       } catch { /* ignore */ }
     };
 
-    requestAnimationFrame(applyOffset);
+    window.requestAnimationFrame(applyOffset);
     window.addEventListener('resize', applyOffset);
 
     const state = this.plugin.getState();
@@ -306,8 +311,8 @@ export class HabitTrackerView extends ItemView {
       }).addEventListener('click', async () => {
         try {
           const file = this.app.vault.getAbstractFileByPath(state.habitsFilePath);
-          if (file) {
-            await this.app.vault.delete(file);
+          if (file instanceof TFile) {
+            await this.app.fileManager.trashFile(file, false);
           }
           await this.plugin.loadHabits();
           await this.render();
@@ -419,10 +424,10 @@ export class HabitTrackerView extends ItemView {
 
         if (option.value === this.plugin.getState().viewType) radioInput.checked = true;
 
-        radioInput.addEventListener('change', async () => {
+        radioInput.addEventListener('change', () => {
           if (radioInput.checked) {
             this.plugin.setViewType(option.value as ViewType);
-            await this.render();
+            void this.render();
           }
         });
 
@@ -439,12 +444,9 @@ export class HabitTrackerView extends ItemView {
     settingsBtn.addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
-      const appAny = this.app as any;
-      const settingManager = appAny.setting;
-      if (settingManager) {
-        settingManager.open();
-        settingManager.openTabById(this.plugin.manifest.id);
-      }
+      const settingManager = this.app.setting;
+      settingManager.open();
+      settingManager.openTabById(this.plugin.manifest.id);
     });
 
     return controlsSection;

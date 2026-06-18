@@ -84,7 +84,7 @@ export function renderYearView(container: HTMLElement, plugin: HabitTrackerPlugi
 
       yearButton.addEventListener('click', () => {
         plugin.setSelectedYear(year);
-        (plugin as any).refreshView();
+        void plugin.refreshView();
       });
     }
 
@@ -129,15 +129,15 @@ export function renderYearView(container: HTMLElement, plugin: HabitTrackerPlugi
 
   // Track the dragged item
   container.addEventListener('dragstart', (e) => {
-    const target = e.target as HTMLElement;
-    draggedItem = target.closest('.habit-drag-item') as HTMLElement;
+    const target = e.target as Element;
+    draggedItem = target.closest('.habit-drag-item');
   });
 
   container.addEventListener('drop', (e) => {
     e.preventDefault();
     const fromIdx = parseInt(e.dataTransfer!.getData('text/plain'));
-    const target = e.target as HTMLElement;
-    const closestItem = target.closest('.habit-drag-item') as HTMLElement | null;
+    const target = e.target as Element;
+    const closestItem = target.closest('.habit-drag-item');
     if (!closestItem || closestItem === draggedItem) return;
     const toItems = Array.from(container.querySelectorAll('.habit-drag-item')) as HTMLElement[];
     let toIdx = toItems.indexOf(closestItem);

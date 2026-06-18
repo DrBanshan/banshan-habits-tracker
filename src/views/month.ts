@@ -1,5 +1,5 @@
 import type HabitTrackerPlugin from '../main';
-import type { AppState } from '../types';
+import type { AppState, Habit } from '../types';
 
 export function renderMonthView(container: HTMLElement, plugin: HabitTrackerPlugin, state: AppState): void {
   const habits = state.habits;
@@ -60,15 +60,15 @@ export function renderMonthView(container: HTMLElement, plugin: HabitTrackerPlug
 
   // Track the dragged item
   container.addEventListener('dragstart', (e) => {
-    const target = e.target as HTMLElement;
-    draggedItem = target.closest('.habit-drag-item') as HTMLElement;
+    const target = e.target as Element;
+    draggedItem = target.closest('.habit-drag-item');
   });
 
   container.addEventListener('drop', (e) => {
     e.preventDefault();
     const fromIdx = parseInt(e.dataTransfer!.getData('text/plain'));
-    const target = e.target as HTMLElement;
-    const closestItem = target.closest('.habit-drag-item') as HTMLElement | null;
+    const target = e.target as Element;
+    const closestItem = target.closest('.habit-drag-item');
     if (!closestItem || closestItem === draggedItem) return;
     const toItems = Array.from(container.querySelectorAll('.habit-drag-item')) as HTMLElement[];
     let toIdx = toItems.indexOf(closestItem);
@@ -81,7 +81,7 @@ export function renderMonthView(container: HTMLElement, plugin: HabitTrackerPlug
   });
 }
 
-function renderMonthCalendar(container: HTMLElement, habit: any, today: Date, plugin: HabitTrackerPlugin, state: AppState): void {
+function renderMonthCalendar(container: HTMLElement, habit: Habit, today: Date, plugin: HabitTrackerPlugin, state: AppState): void {
   const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 
                       'July', 'August', 'September', 'October', 'November', 'December'];
   const monthNamesShort = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
@@ -107,14 +107,14 @@ function renderMonthCalendar(container: HTMLElement, habit: any, today: Date, pl
     const m = new Date(state.selectedMonth);
     m.setMonth(m.getMonth() - 1);
     plugin.setSelectedMonth(m);
-    (plugin as any).refreshView();
+    void plugin.refreshView();
   });
 
   nextBtn.addEventListener('click', () => {
     const m = new Date(state.selectedMonth);
     m.setMonth(m.getMonth() + 1);
     plugin.setSelectedMonth(m);
-    (plugin as any).refreshView();
+    void plugin.refreshView();
   });
 
   // Calendar grid
@@ -152,8 +152,10 @@ function renderMonthCalendar(container: HTMLElement, habit: any, today: Date, pl
       dayCell.addClass('completed');
       dayCell.style.setProperty('--habit-color', habit.color);
       dayCell.style.setProperty('--habit-text-color', getContrastColor(habit.color));
-      const num = dayCell.querySelector('.month-day-num') as HTMLElement;
-      if (num) num.addClass('today');
+      const numEl = dayCell.querySelector('.month-day-num');
+      if (numEl) {
+        numEl.addClass('today');
+      }
     }
 
     if (isSameDay(currentDate, today)) {

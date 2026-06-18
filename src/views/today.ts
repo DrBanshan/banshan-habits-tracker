@@ -189,15 +189,15 @@ export function renderTodayView(container: HTMLElement, plugin: HabitTrackerPlug
 
   // Track the dragged item via dragstart on the container
   cardsContainer.addEventListener('dragstart', (e) => {
-    const target = e.target as HTMLElement;
-    draggedItem = target.closest('.habit-drag-item') as HTMLElement;
+    const target = e.target as Element;
+    draggedItem = target.closest('.habit-drag-item');
   });
 
   cardsContainer.addEventListener('drop', (e) => {
     e.preventDefault();
     const fromIdx = parseInt(e.dataTransfer!.getData('text/plain'));
-    const target = e.target as HTMLElement;
-    const closestItem = target.closest('.habit-drag-item') as HTMLElement | null;
+    const target = e.target as Element;
+    const closestItem = target.closest('.habit-drag-item');
     if (!closestItem || closestItem === draggedItem) return;
     const toItems = Array.from(cardsContainer.querySelectorAll('.habit-drag-item')) as HTMLElement[];
     let toIdx = toItems.indexOf(closestItem);
