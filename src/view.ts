@@ -348,7 +348,7 @@ export class HabitTrackerView extends ItemView {
 
     const addButton = controlsSection.createEl('button', { text: 'Add', cls: 'habit-control-button' });
     addButton.addEventListener('click', () => {
-      new AddHabitModal(this.app, this.plugin, async () => { await this.render(); }).open();
+      new AddHabitModal(this.app, this.plugin, async (): Promise<void> => { await this.render(); }).open();
     });
 
     const habits = this.plugin.getState().habits;
@@ -390,7 +390,7 @@ export class HabitTrackerView extends ItemView {
       editButton.disabled = !this.plugin.getState().selectedHabit;
       editButton.addEventListener('click', () => {
         if (this.plugin.getState().selectedHabit) {
-          new EditHabitModal(this.app, this.plugin, this.plugin.getState().selectedHabit, async () => { await this.render(); }).open();
+          new EditHabitModal(this.app, this.plugin, this.plugin.getState().selectedHabit, async (): Promise<void> => { await this.render(); }).open();
         }
       });
 
@@ -398,7 +398,7 @@ export class HabitTrackerView extends ItemView {
       deleteButton.disabled = !this.plugin.getState().selectedHabit;
       deleteButton.addEventListener('click', () => {
         if (this.plugin.getState().selectedHabit) {
-          new DeleteHabitModal(this.app, this.plugin, this.plugin.getState().selectedHabit, async () => { await this.render(); }).open();
+          new DeleteHabitModal(this.app, this.plugin, this.plugin.getState().selectedHabit, async (): Promise<void> => { await this.render(); }).open();
         }
       });
 
