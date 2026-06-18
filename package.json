@@ -1,0 +1,24 @@
+{
+  "name": "obsidian-habit-tracker",
+  "type": "module",
+  "version": "0.1.0",
+  "description": "A habit tracking plugin for Obsidian",
+  "main": "main.js",
+  "scripts": {
+    "dev": "node build.js --watch",
+    "build": "node build.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "js-yaml": "^4.1.0",
+    "obsidian": "^1.5.0"
+  },
+  "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
+    "esbuild": "^0.20.0",
+    "typescript": "^5.3.0",
+    "vitest": "^1.0.0"
+  }
+}
