@@ -95,7 +95,32 @@ export function renderTodayView(container: HTMLElement, plugin: HabitTrackerPlug
         }
 
         sq.addEventListener('click', () => {
+          const wasCompleted = isHabitCompleted(plugin, habit.name, dStr);
           plugin.toggleDay(habit.name, dStr);
+          // Update visual state immediately without full re-render
+          const newState = !wasCompleted;
+          if (isSameDay(d, today)) {
+            // Today square gets special outline + color treatment
+            sq.classList.toggle('completed', newState);
+            if (newState) {
+              sq.style.setProperty('--habit-color', habit.color);
+              sq.style.setProperty('--habit-shadow', `0 6px 14px ${hexToRgba(habit.color, 0.14)}`);
+              sq.style.setProperty('--habit-outline', `2px solid ${hexToRgba(habit.color, 0.18)}`);
+            } else {
+              sq.style.setProperty('--habit-light-bg', hexToRgba(habit.color, 0.12));
+              sq.style.setProperty('--habit-outline', `2px solid ${hexToRgba(habit.color, 0.18)}`);
+            }
+          } else {
+            // Non-today completed squares get solid color
+            sq.classList.toggle('completed', newState);
+            if (newState) {
+              sq.style.setProperty('--habit-color', habit.color);
+              sq.style.setProperty('--habit-shadow', `0 6px 14px ${hexToRgba(habit.color, 0.14)}`);
+            } else {
+              sq.style.removeProperty('--habit-color');
+              sq.style.removeProperty('--habit-shadow');
+            }
+          }
         });
         sq.setAttribute('data-date', dStr);
       }
