@@ -1,9 +1,10 @@
 import * as yaml from 'yaml';
-import type { App, TAbstractFile, TFile } from 'obsidian';
+import { App, TAbstractFile, TFile } from 'obsidian';
 import type { Tracker, Habit, CompletionMap, CompletionStatus } from './types';
 
 function isTFile(file: TAbstractFile | null): file is TFile {
-  return file !== null && file.constructor.name === 'TFile';
+  if (!file) return false;
+  return file instanceof TFile;
 }
 import { DEFAULT_HABITS_FILE } from './types';
 
@@ -375,6 +376,7 @@ function buildMonthSection(tracker: Tracker, year: number, month: number): strin
 
 export async function writeTrackerFile(app: App, path: string, tracker: Tracker, daysToShow: number = 21, filterEmptyMonths: boolean = true, affectedDate?: string): Promise<void> {
   const { isDebug } = await import('./store');
+  console.log('[HabitTracker] writeTrackerFile START path=' + path + ' filterEmptyMonths=' + filterEmptyMonths + ' affectedDate=' + (affectedDate || 'none'));
   if (isDebug()) console.log('[HabitTracker] writeTrackerFile filterEmptyMonths=' + filterEmptyMonths + ' affectedDate=' + (affectedDate || 'none'));
 
   // Determine which month to write
@@ -394,10 +396,9 @@ export async function writeTrackerFile(app: App, path: string, tracker: Tracker,
   // Read existing file
   let content: string;
   const abstractFile = app.vault.getAbstractFileByPath(path);
-  let targetFile: TFile;
+  console.log('[HabitTracker] writeTrackerFile abstractFile=' + (abstractFile ? abstractFile.name : 'null') + ' type=' + (abstractFile ? abstractFile.constructor.name : 'null') + ' isTFile=' + isTFile(abstractFile));
   if (isTFile(abstractFile)) {
-    targetFile = abstractFile;
-    content = await app.vault.read(targetFile);
+    content = await app.vault.read(abstractFile as TFile);
   } else {
     // File doesn't exist yet - generate full content
     content = generateTrackerContent(tracker, daysToShow, filterEmptyMonths);
@@ -493,7 +494,7 @@ export async function writeTrackerFile(app: App, path: string, tracker: Tracker,
     }
   }
 
-  await app.vault.modify(targetFile, content);
+  await app.vault.modify(abstractFile as TFile, content);
 }
 
 /**
@@ -504,7 +505,7 @@ export async function lintHabitsFile(app: App, path: string): Promise<boolean> {
   let content: string;
   // Try vault read first (Obsidian-indexed), fall back to adapter (raw filesystem)
   const file = app.vault.getAbstractFileByPath(path);
-  let targetFile: TFile | null = isTFile(file) ? file : null;
+  let targetFile: TFile | null = isTFile(file) ? (file as TFile) : null;
   if (isTFile(file)) {
     content = await app.vault.read(file);
   } else {

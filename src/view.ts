@@ -1,4 +1,4 @@
-import { ItemView, WorkspaceLeaf, setIcon } from 'obsidian';
+import { ItemView, TFile, WorkspaceLeaf, setIcon } from 'obsidian';
 import type HabitTrackerPlugin from './main';
 import type { Habit } from './types';
 import { renderTodayView } from './views/today';
@@ -311,7 +311,7 @@ export class HabitTrackerView extends ItemView {
       }).addEventListener('click', async () => {
         try {
           const file = this.app.vault.getAbstractFileByPath(state.habitsFilePath);
-          if (file && file.constructor.name === 'TFile') {
+          if (file instanceof TFile) {
             await this.app.fileManager.trashFile(file, false);
           }
           await this.plugin.loadHabits();
