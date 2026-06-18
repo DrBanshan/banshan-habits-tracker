@@ -158,7 +158,7 @@ export function toggleDay(habitName: string, date: string) {
     habitName,
     date
   });
-  persist(newCompletions, current.habits, date);
+  void persist(newCompletions, current.habits, date);
 }
 
 export function addHabit(habit: Habit) {
@@ -176,7 +176,7 @@ export function addHabit(habit: Habit) {
     streaks: newStreaks,
     selectedHabit: habit.name
   }));
-  persist(newCompletions, newHabits);
+  void persist(newCompletions, newHabits);
 }
 
 export function renameHabit(oldName: string, newName: string) {
@@ -198,7 +198,7 @@ export function renameHabit(oldName: string, newName: string) {
     streaks: newStreaks,
     selectedHabit: s.selectedHabit === oldName ? newName : s.selectedHabit
   }));
-  persist(newCompletions, newHabits);
+  void persist(newCompletions, newHabits);
 }
 
 export function deleteHabit(habitName: string, keepData?: boolean) {
@@ -231,14 +231,14 @@ export function deleteHabit(habitName: string, keepData?: boolean) {
     selectedHabit: s.selectedHabit === habitName ? (newHabits.length > 0 ? newHabits[0].name : null) : s.selectedHabit,
     deletedHabits: newDeletedHabits
   }), { type: 'deleteHabit', habitName });
-  persist(newCompletions, newHabits);
+  void persist(newCompletions, newHabits);
 }
 
 export function setHabitColor(habitName: string, color: string) {
   const current = getState();
   const newHabits = current.habits.map(h => h.name === habitName ? { ...h, color } : h);
   setState(s => ({ ...s, habits: newHabits }));
-  persist(current.completions, newHabits);
+  void persist(current.completions, newHabits);
 }
 
 export function setViewType(viewType: ViewType) {
@@ -291,7 +291,7 @@ export function reorderHabits(fromIndex: number, toIndex: number) {
   const [moved] = newHabits.splice(fromIndex, 1);
   newHabits.splice(toIndex, 0, moved);
   setState(s => ({ ...s, habits: newHabits }), { type: 'reorder' });
-  persist(current.completions, newHabits);
+  void persist(current.completions, newHabits);
 }
 
 async function persist(completions: CompletionMap, habits: Habit[], affectedDate?: string) {

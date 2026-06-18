@@ -34,7 +34,7 @@ export class HabitTrackerView extends ItemView {
         // The view will be updated on next interaction or manual refresh
       } else {
         // Full re-render for other changes
-        this.render();
+        void this.render();
       }
     });
     await this.render();
@@ -366,7 +366,7 @@ export class HabitTrackerView extends ItemView {
           e.stopPropagation();
           this.plugin.setSelectedHabit(habit.name);
           dropdownMenu.toggleClass('show', false);
-          this.render();
+          void this.render();
         });
       });
 

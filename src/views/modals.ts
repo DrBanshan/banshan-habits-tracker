@@ -108,7 +108,7 @@ export class AddHabitModal extends Modal {
       ...(frequency === 'specific' && specificDays.length > 0 ? { specificDays } : {})
     });
     this.close();
-    this.onSubmit();
+    void this.onSubmit();
   }
 }
 
@@ -213,7 +213,7 @@ export class EditHabitModal extends Modal {
           this.plugin.updateHabitDetails(name.trim(), icon, color, frequency, streakMode, specificDays);
         }
         this.close();
-        this.onSubmit();
+        void this.onSubmit();
       }))
       .addButton(btn => btn.setButtonText('Cancel').onClick(() => this.close()));
   }

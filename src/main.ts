@@ -82,21 +82,21 @@ export default class HabitTrackerPlugin extends Plugin {
   }
 
   getState() { return getState(); }
-  async loadHabits() { await loadHabits(); this.refreshView(); }
+  async loadHabits() { await loadHabits(); void this.refreshView(); }
   toggleDay(habitName: string, date: string) { toggleDay(habitName, date); }
-  addHabit(habit: Habit) { addHabit(habit); this.refreshView(); }
-  renameHabit(oldName: string, newName: string) { renameHabit(oldName, newName); this.refreshView(); }
-  deleteHabit(habitName: string, keepData?: boolean) { deleteHabit(habitName, keepData); this.refreshView(); }
+  addHabit(habit: Habit) { addHabit(habit); void this.refreshView(); }
+  renameHabit(oldName: string, newName: string) { renameHabit(oldName, newName); void this.refreshView(); }
+  deleteHabit(habitName: string, keepData?: boolean) { deleteHabit(habitName, keepData); void this.refreshView(); }
   updateHabitDetails(name: string, icon: string, color: string, frequency: string, streakMode: string, specificDays?: string[]) {
     setHabitColor(name, color);
-    this.refreshView();
+    void this.refreshView();
   }
   getHabit(name: string) { return getState().habits.find(h => h.name === name); }
-  setViewType(viewType: string) { setViewType(viewType as any); this.refreshView(); }
-  setSelectedHabit(habitName: string) { setSelectedHabit(habitName); this.refreshView(); }
-  setSelectedMonth(month: Date) { setSelectedMonth(month); this.refreshView(); }
-  setSelectedYear(year: number) { setSelectedYear(year); this.refreshView(); }
-  reorderHabits(fromIndex: number, toIndex: number) { reorderHabits(fromIndex, toIndex); this.refreshView(); }
+  setViewType(viewType: string) { setViewType(viewType as any); void this.refreshView(); }
+  setSelectedHabit(habitName: string) { setSelectedHabit(habitName); void this.refreshView(); }
+  setSelectedMonth(month: Date) { setSelectedMonth(month); void this.refreshView(); }
+  setSelectedYear(year: number) { setSelectedYear(year); void this.refreshView(); }
+  reorderHabits(fromIndex: number, toIndex: number) { reorderHabits(fromIndex, toIndex); void this.refreshView(); }
 
   onunload(): void {
     // Cleanup handled by store subscription management
