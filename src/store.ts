@@ -1,4 +1,4 @@
-import { App, TFile } from 'obsidian';
+import type { App, TFile } from 'obsidian';
 import type { Tracker, Habit, CompletionMap, StreakInfo, CompletionStatus, ViewType, AppState } from './types';
 import { parseTrackerFile, writeTrackerFile, ensureDefaultTracker, readTrackerFile, lintHabitsFile } from './parser';
 import { calculateStreak } from './streak';
@@ -91,9 +91,9 @@ export async function loadHabits() {
 
     let content: string;
     const existing = appRef.vault.getAbstractFileByPath(habitsFilePath);
-    if (existing instanceof TFile) {
+    if (existing && existing.constructor.name === 'TFile') {
       // File exists in vault index - read and parse it
-      content = await appRef.vault.read(existing);
+      content = await appRef.vault.read(existing as TFile);
     } else {
       // File not in vault index - try to read directly via adapter
       // (bypasses vault index which may not have caught up yet)

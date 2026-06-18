@@ -1,4 +1,5 @@
-import { ItemView, TFile, WorkspaceLeaf, setIcon } from 'obsidian';
+import { ItemView, WorkspaceLeaf, setIcon } from 'obsidian';
+import type { TFile } from 'obsidian';
 import type HabitTrackerPlugin from './main';
 import type { Habit } from './types';
 import { renderTodayView } from './views/today';
@@ -70,32 +71,30 @@ export class HabitTrackerView extends ItemView {
     // Find all cells for this habit with the matching data-date attribute
     const cells = container.querySelectorAll(`[data-habit="${habitName}"][data-date="${date}"]`);
     cells.forEach(cell => {
-      const el = cell as HTMLElement;
       if (isCompleted) {
-        el.addClass('completed');
+        cell.addClass('completed');
         // Check if this is a year view cell (has opacity-based streak levels)
-        const isYearCell = el.classList.contains('github-cell') || el.classList.contains('year-overview-day');
+        const isYearCell = cell.classList.contains('github-cell') || cell.classList.contains('year-overview-day');
         if (isYearCell) {
           const streak = this.calcStreakForDate(habit, date);
           const opacity = this.getOpacityForStreak(streak);
-          el.style.setProperty('--habit-color', habit.color, 'important');
-          el.style.setProperty('--habit-opacity', String(opacity), 'important');
+          cell.style.setProperty('--habit-color', habit.color, 'important');
+          cell.style.setProperty('--habit-opacity', String(opacity), 'important');
         } else {
           // Month/today view: just set the background color
-          el.style.setProperty('--habit-color', habit.color);
-          el.style.removeProperty('--habit-opacity');
+          cell.style.setProperty('--habit-color', habit.color);
+          cell.style.removeProperty('--habit-opacity');
         }
       } else {
-        el.removeClass('completed');
-        el.style.removeProperty('--habit-color');
-        el.style.removeProperty('--habit-opacity');
+        cell.removeClass('completed');
+        cell.style.removeProperty('--habit-color');
+        cell.style.removeProperty('--habit-opacity');
       }
     });
   }
 
   private updateTodayViewInPlace(habitName: string, date: string, isCompleted: boolean, habit: Habit): void {
-    const container = this.containerEl.children[1] as HTMLElement;
-    const todaySection = container.querySelector('.today-overview');
+    const todaySection = this.containerEl.querySelector('.today-overview');
     if (!todaySection) return;
 
     // Find the card for this habit
@@ -113,25 +112,24 @@ export class HabitTrackerView extends ItemView {
       const weekRow = card.querySelector('.today-week-row');
       const weekSquares = weekRow?.querySelectorAll('[data-date="' + date + '"]') || [];
       weekSquares.forEach(sq => {
-        const sqEl = sq as HTMLElement;
-        const isTodaySq = sqEl.classList.contains('today');
+        const isTodaySq = sq.classList.contains('today');
         if (isCompleted) {
-          sqEl.addClass('completed');
-          sqEl.style.setProperty('--habit-color', habit.color);
-          sqEl.style.setProperty('--habit-shadow', `0 6px 14px ${this.hexToRgba(habit.color, 0.14)}`);
+          sq.addClass('completed');
+          sq.style.setProperty('--habit-color', habit.color);
+          sq.style.setProperty('--habit-shadow', `0 6px 14px ${this.hexToRgba(habit.color, 0.14)}`);
           if (isTodaySq) {
-            sqEl.style.setProperty('--habit-outline', `2px solid ${this.hexToRgba(habit.color, 0.18)}`);
+            sq.style.setProperty('--habit-outline', `2px solid ${this.hexToRgba(habit.color, 0.18)}`);
           }
         } else {
-          sqEl.removeClass('completed');
-          sqEl.style.removeProperty('--habit-color');
-          sqEl.style.removeProperty('--habit-shadow');
+          sq.removeClass('completed');
+          sq.style.removeProperty('--habit-color');
+          sq.style.removeProperty('--habit-shadow');
           if (isTodaySq) {
-            sqEl.style.setProperty('--habit-light-bg', this.hexToRgba(habit.color, 0.12));
-            sqEl.style.setProperty('--habit-outline', `2px solid ${this.hexToRgba(habit.color, 0.18)}`);
+            sq.style.setProperty('--habit-light-bg', this.hexToRgba(habit.color, 0.12));
+            sq.style.setProperty('--habit-outline', `2px solid ${this.hexToRgba(habit.color, 0.18)}`);
           } else {
-            sqEl.style.removeProperty('--habit-light-bg');
-            sqEl.style.removeProperty('--habit-outline');
+            sq.style.removeProperty('--habit-light-bg');
+            sq.style.removeProperty('--habit-outline');
           }
         }
       });
@@ -142,26 +140,24 @@ export class HabitTrackerView extends ItemView {
         const middleSection = card.querySelector('.today-card-middle');
         const inlineCheckBtnEl = middleSection?.querySelector('[data-date="' + date + '"]');
         if (inlineCheckBtnEl) {
-          const inlineCheckBtn = inlineCheckBtnEl;
-          const markEl = inlineCheckBtn.querySelector('.today-check-mark');
-          const mark = markEl ? markEl : null;
-          if (mark) mark.textContent = isCompleted ? '✓' : '';
+          const markEl = inlineCheckBtnEl.querySelector('.today-check-mark');
+          if (markEl) markEl.textContent = isCompleted ? '✓' : '';
           if (isCompleted) {
-            inlineCheckBtn.addClass('active');
+            inlineCheckBtnEl.addClass('active');
             card.addClass('active-today');
             card.style.setProperty('--habit-card-bg', this.hexToRgba(habit.color, 0.12));
             card.style.setProperty('--habit-text-color', this.getContrastColor(habit.color));
-            inlineCheckBtn.style.setProperty('--habit-btn-bg', habit.color);
-            inlineCheckBtn.style.setProperty('--habit-btn-shadow', `0 8px 20px ${this.hexToRgba(habit.color, 0.18)}`);
-            inlineCheckBtn.style.setProperty('--habit-btn-border', habit.color);
+            inlineCheckBtnEl.style.setProperty('--habit-btn-bg', habit.color);
+            inlineCheckBtnEl.style.setProperty('--habit-btn-shadow', `0 8px 20px ${this.hexToRgba(habit.color, 0.18)}`);
+            inlineCheckBtnEl.style.setProperty('--habit-btn-border', habit.color);
           } else {
-            inlineCheckBtn.removeClass('active');
+            inlineCheckBtnEl.removeClass('active');
             card.removeClass('active-today');
             card.style.removeProperty('--habit-card-bg');
             card.style.removeProperty('--habit-text-color');
-            inlineCheckBtn.style.removeProperty('--habit-btn-bg');
-            inlineCheckBtn.style.removeProperty('--habit-btn-shadow');
-            inlineCheckBtn.style.removeProperty('--habit-btn-border');
+            inlineCheckBtnEl.style.removeProperty('--habit-btn-bg');
+            inlineCheckBtnEl.style.removeProperty('--habit-btn-shadow');
+            inlineCheckBtnEl.style.removeProperty('--habit-btn-border');
           }
         }
 
@@ -169,14 +165,12 @@ export class HabitTrackerView extends ItemView {
         const rightSection = card.querySelector('.today-card-right');
         const checkBtnEl = rightSection?.querySelector('[data-date="' + date + '"]');
         if (checkBtnEl) {
-          const checkBtn = checkBtnEl;
-          const markEl = checkBtn.querySelector('.today-check-mark');
-          const mark = markEl ? markEl : null;
-          if (mark) mark.textContent = isCompleted ? '✓' : '';
+          const markEl = checkBtnEl.querySelector('.today-check-mark');
+          if (markEl) markEl.textContent = isCompleted ? '✓' : '';
           if (isCompleted) {
-            checkBtn.addClass('active');
+            checkBtnEl.addClass('active');
           } else {
-            checkBtn.removeClass('active');
+            checkBtnEl.removeClass('active');
           }
         }
       }
@@ -289,7 +283,7 @@ export class HabitTrackerView extends ItemView {
 
     const applyOffset = () => {
       try {
-        const h = (controlsEl as HTMLElement).getBoundingClientRect().height || 0;
+        const h = controlsEl.getBoundingClientRect().height || 0;
         const offset = Math.max(4, Math.ceil(h * 0.4));
         contentWrapper.style.setProperty('--content-offset', `${offset}px`);
       } catch { /* ignore */ }
@@ -308,17 +302,19 @@ export class HabitTrackerView extends ItemView {
       errorEl.createEl('button', {
         text: 'Delete habits file & reload',
         cls: 'error-retry-button'
-      }).addEventListener('click', async () => {
-        try {
-          const file = this.app.vault.getAbstractFileByPath(state.habitsFilePath);
-          if (file instanceof TFile) {
-            await this.app.fileManager.trashFile(file, false);
+      }).addEventListener('click', () => {
+        void (async () => {
+          try {
+            const file = this.app.vault.getAbstractFileByPath(state.habitsFilePath);
+            if (file && file.constructor.name === 'TFile') {
+              await this.app.fileManager.trashFile(file, false);
+            }
+            await this.plugin.loadHabits();
+            await this.render();
+          } catch (e) {
+            console.error('[HabitTracker] Failed to retry:', e);
           }
-          await this.plugin.loadHabits();
-          await this.render();
-        } catch (e) {
-          console.error('[HabitTracker] Failed to retry:', e);
-        }
+        })();
       });
       return;
     }
@@ -380,7 +376,7 @@ export class HabitTrackerView extends ItemView {
         dropdownMenu.toggleClass('show', true);
       });
 
-      this.registerDomEvent(document, 'click', (e: MouseEvent) => {
+      this.registerDomEvent(window.document, 'click', (e: MouseEvent) => {
         if (!customDropdown.contains(e.target as Node)) {
           dropdownMenu.toggleClass('show', false);
         }
@@ -441,12 +437,9 @@ export class HabitTrackerView extends ItemView {
     const settingsBtn = controlsRight.createEl('button', { cls: 'habit-settings-button', attr: { type: 'button', title: 'Settings' } });
     setIcon(settingsBtn, 'settings');
 
-    settingsBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      const settingManager = this.app.setting;
-      settingManager.open();
-      settingManager.openTabById(this.plugin.manifest.id);
+    settingsBtn.addEventListener('click', () => {
+      this.app.setting.open();
+      this.app.setting.openTabById(this.plugin.manifest.id);
     });
 
     return controlsSection;

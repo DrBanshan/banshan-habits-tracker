@@ -1,4 +1,5 @@
 import { App, ColorComponent, Modal, Setting } from 'obsidian';
+import type { TextComponent } from 'obsidian';
 import type HabitTrackerPlugin from '../main';
 import { DEFAULT_COLORS } from '../types';
 import type { Frequency, StreakMode } from '../types';
@@ -24,7 +25,7 @@ export class AddHabitModal extends Modal {
     let frequency: Frequency = 'daily';
     let streakMode: StreakMode = 'strict';
     let specificDays: string[] = [];
-    let textInput: any;
+    let textInput: TextComponent | undefined;
 
     const emojiContainer = contentEl.createDiv({ cls: 'habit-icon-picker' });
     const EMOJI_OPTIONS = ['🏃', '📖', '💧', '🧘', '💪', '🥗', '😴', '✍️', '🎵', '💊', '🌅', '🚶', '🏋️', '📝', '🧹'];
@@ -40,7 +41,9 @@ export class AddHabitModal extends Modal {
 
     const specificDaysSetting = new Setting(contentEl)
       .setName('Days')
-      .addText(text => text.setPlaceholder('Mon,Wed,Fri').onChange(v => specificDays = v.split(',').map(d => d.trim())));
+      .addText(text => {
+        text.setPlaceholder('Mon,Wed,Fri').onChange(v => specificDays = v.split(',').map(d => d.trim()));
+      });
     specificDaysSetting.settingEl.addClass('habit-dynamic-display');
 
     new Setting(contentEl)
@@ -117,7 +120,7 @@ export class EditHabitModal extends Modal {
   habitName: string;
   onSubmit: () => Promise<void>;
 
-  constructor(app: any, plugin: HabitTrackerPlugin, habitName: string, onSubmit: () => Promise<void>) {
+  constructor(app: App, plugin: HabitTrackerPlugin, habitName: string, onSubmit: () => Promise<void>) {
     super(app);
     this.plugin = plugin;
     this.habitName = habitName;
@@ -138,7 +141,7 @@ export class EditHabitModal extends Modal {
     let frequency: Frequency = habit.frequency;
     let streakMode: StreakMode = habit.streakMode;
     let specificDays: string[] = habit.specificDays || [];
-    let textInput: HTMLInputElement | undefined;
+    let textInput: TextComponent | undefined;
 
     const emojiContainer = contentEl.createDiv({ cls: 'habit-icon-picker' });
     const EMOJI_OPTIONS = ['🏃', '📖', '💧', '🧘', '💪', '🥗', '😴', '✍️', '🎵', '💊', '🌅', '🚶', '🏋️', '📝', '🧹'];

@@ -1,12 +1,19 @@
 import * as yaml from 'yaml';
-import { App, TAbstractFile, TFile } from 'obsidian';
+import type { App, TAbstractFile, TFile } from 'obsidian';
 import type { Tracker, Habit, CompletionMap, CompletionStatus } from './types';
+import { DEFAULT_HABITS_FILE } from './types';
 
 function isTFile(file: TAbstractFile | null): file is TFile {
   if (!file) return false;
-  return file instanceof TFile;
+  // Use the Obsidian global TFile constructor for instanceof check
+  const TFileCtor = (typeof globalThis !== 'undefined' && (globalThis as Record<string, unknown>).TFile) ||
+                    (typeof window !== 'undefined' && (window as Record<string, unknown>).TFile);
+  if (TFileCtor && typeof TFileCtor === 'function') {
+    return file instanceof (TFileCtor as new (...args: never[]) => TFile);
+  }
+  // Fallback: check constructor name when the class is not directly accessible
+  return file.constructor.name === 'TFile';
 }
-import { DEFAULT_HABITS_FILE } from './types';
 
 interface RawYaml {
   name: string;
@@ -376,7 +383,6 @@ function buildMonthSection(tracker: Tracker, year: number, month: number): strin
 
 export async function writeTrackerFile(app: App, path: string, tracker: Tracker, daysToShow: number = 21, filterEmptyMonths: boolean = true, affectedDate?: string): Promise<void> {
   const { isDebug } = await import('./store');
-  console.log('[HabitTracker] writeTrackerFile START path=' + path + ' filterEmptyMonths=' + filterEmptyMonths + ' affectedDate=' + (affectedDate || 'none'));
   if (isDebug()) console.log('[HabitTracker] writeTrackerFile filterEmptyMonths=' + filterEmptyMonths + ' affectedDate=' + (affectedDate || 'none'));
 
   // Determine which month to write
@@ -396,9 +402,8 @@ export async function writeTrackerFile(app: App, path: string, tracker: Tracker,
   // Read existing file
   let content: string;
   const abstractFile = app.vault.getAbstractFileByPath(path);
-  console.log('[HabitTracker] writeTrackerFile abstractFile=' + (abstractFile ? abstractFile.name : 'null') + ' type=' + (abstractFile ? abstractFile.constructor.name : 'null') + ' isTFile=' + isTFile(abstractFile));
   if (isTFile(abstractFile)) {
-    content = await app.vault.read(abstractFile as TFile);
+    content = await app.vault.read(abstractFile);
   } else {
     // File doesn't exist yet - generate full content
     content = generateTrackerContent(tracker, daysToShow, filterEmptyMonths);
@@ -494,7 +499,7 @@ export async function writeTrackerFile(app: App, path: string, tracker: Tracker,
     }
   }
 
-  await app.vault.modify(abstractFile as TFile, content);
+  await app.vault.modify(abstractFile, content);
 }
 
 /**
@@ -505,7 +510,6 @@ export async function lintHabitsFile(app: App, path: string): Promise<boolean> {
   let content: string;
   // Try vault read first (Obsidian-indexed), fall back to adapter (raw filesystem)
   const file = app.vault.getAbstractFileByPath(path);
-  let targetFile: TFile | null = isTFile(file) ? (file as TFile) : null;
   if (isTFile(file)) {
     content = await app.vault.read(file);
   } else {
@@ -579,8 +583,8 @@ export async function lintHabitsFile(app: App, path: string): Promise<boolean> {
   }
 
   const newContent = newLines.join('\n');
-  if (targetFile) {
-    await app.vault.modify(targetFile, newContent);
+  if (file && file.constructor.name === 'TFile') {
+    await app.vault.modify(file as TFile, newContent);
   } else {
     await app.vault.adapter.write(path, newContent);
   }

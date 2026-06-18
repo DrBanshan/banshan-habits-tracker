@@ -64,7 +64,7 @@ export default class HabitTrackerPlugin extends Plugin {
     }
 
     if (leaf) {
-      workspace.revealLeaf(leaf);
+      void workspace.revealLeaf(leaf);
     }
   }
 
@@ -77,12 +77,12 @@ export default class HabitTrackerPlugin extends Plugin {
   }
 
   async loadSettings(): Promise<void> {
-    const data = await this.loadData();
-    if (!data) {
+    const raw = await this.loadData();
+    if (!raw) {
       this.settings = DEFAULT_SETTINGS;
       return;
     }
-    const safe = data as Partial<PluginSettings>;
+    const safe = raw as Partial<PluginSettings>;
     this.settings = {
       habitsFilePath: safe.habitsFilePath || DEFAULT_HABITS_FILE,
       todayViewDays: safe.todayViewDays ?? 7,
