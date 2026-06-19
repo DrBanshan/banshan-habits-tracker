@@ -21,36 +21,36 @@
 }
 
 .habit-content .habit-section > * {
-  margin-top: 0 !important;
+  margin-top: 0;
 }
 
 .habit-content .calendar-month {
-  margin-top: 0 !important;
+  margin-top: 0;
 }
 
 .habit-content .github-header {
-  margin-top: 0 !important;
+  margin-top: 0;
 }
 
 .habit-content .year-overview-header {
-  margin-top: 0 !important;
+  margin-top: 0;
 }
 
 .habit-content .today-title {
-  margin-top: 0 !important;
+  margin-top: 0;
 }
 
 .habit-content .today-overview {
-  margin-top: 0 !important;
-  padding-top: 0 !important;
+  margin-top: 0;
+  padding-top: 0;
 }
 
 .habit-content .today-cards-container {
-  margin-top: 0 !important;
+  margin-top: 0;
 }
 
 .habit-content .habit-name {
-  margin-top: 0 !important;
+  margin-top: 0;
 }
 
 .habit-controls {
@@ -81,8 +81,8 @@
   width: 24px;
   height: 24px;
   padding: 0;
-  background: transparent !important;
-  border: none !important;
+  background: transparent;
+  border: none;
   color: var(--text-normal);
   cursor: pointer;
   border-radius: 0;
@@ -94,10 +94,10 @@
 
 .habit-settings-button,
 .habit-settings-button * {
-  background: transparent !important;
-  border: 0 !important;
-  outline: none !important;
-  box-shadow: none !important;
+  background: transparent;
+  border: 0;
+  outline: none;
+  box-shadow: none;
 }
 
 .habit-settings-button svg {
@@ -107,11 +107,11 @@
   height: 18px;
   display: block;
   margin: 0;
-  fill: none !important;
-  stroke: currentColor !important;
-  stroke-width: 1.4 !important;
-  stroke-linecap: round !important;
-  stroke-linejoin: round !important;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .habit-settings-button:focus {
@@ -285,10 +285,12 @@
   font-weight: 500;
 }
 
-.view-radio-label:has(.view-radio-input:checked) {
+.view-radio-label.checked {
   background-color: var(--interactive-accent);
   color: var(--text-on-accent);
 }
+
+
 
 
 
@@ -1126,19 +1128,19 @@
 }
 
 .habit-drag-item.drag-over-top {
-  border-top: 4px solid var(--interactive-accent) !important;
+  border-top: 4px solid var(--interactive-accent);
 }
 
 .habit-drag-item.drag-over-bottom {
-  border-bottom: 4px solid var(--interactive-accent) !important;
+  border-bottom: 4px solid var(--interactive-accent);
 }
 
 .month-habit-block.drag-over-left {
-  border-left: 4px solid var(--interactive-accent) !important;
+  border-left: 4px solid var(--interactive-accent);
 }
 
 .month-habit-block.drag-over-right {
-  border-right: 4px solid var(--interactive-accent) !important;
+  border-right: 4px solid var(--interactive-accent);
 }
 
 /* Grid containers */

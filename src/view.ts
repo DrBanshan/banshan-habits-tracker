@@ -420,7 +420,10 @@ export class HabitTrackerView extends ItemView {
           cls: 'view-radio-input'
         });
 
-        if (option.value === this.plugin.getState().viewType) radioInput.checked = true;
+        if (option.value === this.plugin.getState().viewType) {
+          radioInput.checked = true;
+          radioLabel.addClass('checked');
+        }
 
         radioInput.addEventListener('change', () => {
           if (radioInput.checked) {
