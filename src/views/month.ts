@@ -18,7 +18,7 @@ export function renderMonthView(container: HTMLElement, plugin: HabitTrackerPlug
     renderMonthCalendar(habitBlock, habit, today, plugin, state);
 
     // Drag events for reordering
-    habitBlock.addEventListener('dragstart', (e) => {
+    habitBlock.addEventListener('dragstart', (e: DragEvent) => {
       e.dataTransfer!.setData('text/plain', String(idx));
       e.dataTransfer!.effectAllowed = 'move';
     });
@@ -26,10 +26,10 @@ export function renderMonthView(container: HTMLElement, plugin: HabitTrackerPlug
 
   // Drop zone handling on the container
   let draggedItem: HTMLElement | null = null;
-  container.addEventListener('dragover', (e) => {
+  container.addEventListener('dragover', (e: DragEvent) => {
     e.preventDefault();
     e.dataTransfer!.dropEffect = 'move';
-    const items = container.querySelectorAll('.habit-drag-item');
+    const items = Array.from(container.querySelectorAll<HTMLElement>('.habit-drag-item'));
     for (const item of items) {
       item.classList.remove('drag-over-right', 'drag-over-left');
     }
@@ -57,19 +57,20 @@ export function renderMonthView(container: HTMLElement, plugin: HabitTrackerPlug
   });
 
   // Track the dragged item
-  container.addEventListener('dragstart', (e) => {
+  container.addEventListener('dragstart', (e: DragEvent) => {
     const target = e.target as Element;
     draggedItem = target.closest('.habit-drag-item');
   });
 
-  container.addEventListener('drop', (e) => {
+  container.addEventListener('drop', (e: DragEvent) => {
     e.preventDefault();
     const fromIdx = parseInt(e.dataTransfer!.getData('text/plain'));
     const target = e.target as Element;
     const closestItem = target.closest('.habit-drag-item');
     if (!closestItem || closestItem === draggedItem) return;
-    const toItems = container.querySelectorAll('.habit-drag-item');
-    let toIdx = toItems.indexOf(closestItem);
+    const closestItemHtEl = closestItem as HTMLElement;
+    const toItems = Array.from(container.querySelectorAll<HTMLElement>('.habit-drag-item'));
+    let toIdx = toItems.indexOf(closestItemHtEl);
     const rect = closestItem.getBoundingClientRect();
     const midX = rect.left + rect.width / 2;
     if (e.clientX > midX) toIdx++;
@@ -80,8 +81,6 @@ export function renderMonthView(container: HTMLElement, plugin: HabitTrackerPlug
 }
 
 function renderMonthCalendar(container: HTMLElement, habit: Habit, today: Date, plugin: HabitTrackerPlugin, state: AppState): void {
-  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 
-                      'July', 'August', 'September', 'October', 'November', 'December'];
   const monthNamesShort = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
                            'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -181,21 +180,6 @@ function formatDate(date: Date): string {
   const m = String(date.getMonth() + 1).padStart(2, '0');
   const d = String(date.getDate()).padStart(2, '0');
   return `${y}-${m}-${d}`;
-}
-
-function hexToRgba(hex: string, alpha: number): string {
-  const clean = hex.replace('#', '').trim();
-  let r: number, g: number, b: number;
-  if (clean.length === 3) {
-    r = parseInt(clean[0] + clean[0], 16);
-    g = parseInt(clean[1] + clean[1], 16);
-    b = parseInt(clean[2] + clean[2], 16);
-  } else {
-    r = parseInt(clean.slice(0, 2), 16);
-    g = parseInt(clean.slice(2, 4), 16);
-    b = parseInt(clean.slice(4, 6), 16);
-  }
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
 function getContrastColor(hex: string): string {

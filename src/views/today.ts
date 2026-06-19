@@ -130,6 +130,7 @@ export function renderTodayView(container: HTMLElement, plugin: HabitTrackerPlug
     middle.createEl('div', { text: `${weekCount}/${numDays}`, cls: 'today-week-count-inline' });
 
     const right = card.createEl('div', { cls: 'today-card-right' });
+    void right; // used for drag layout structure
 
     if (isTodayCompleted) {
       card.addClass('active-today');
@@ -169,7 +170,7 @@ export function renderTodayView(container: HTMLElement, plugin: HabitTrackerPlug
     checkBtn.setAttribute('data-date', todayStr);
 
     // Drag events for reordering
-    card.addEventListener('dragstart', (e) => {
+    card.addEventListener('dragstart', (e: DragEvent) => {
       card.addClass('dragging');
       e.dataTransfer!.setData('text/plain', String(idx));
       e.dataTransfer!.effectAllowed = 'move';
@@ -182,10 +183,10 @@ export function renderTodayView(container: HTMLElement, plugin: HabitTrackerPlug
 
   // Drop zone handling on the container
   let draggedItem: HTMLElement | null = null;
-  cardsContainer.addEventListener('dragover', (e) => {
+  cardsContainer.addEventListener('dragover', (e: DragEvent) => {
     e.preventDefault();
     e.dataTransfer!.dropEffect = 'move';
-    const items = cardsContainer.querySelectorAll('.habit-drag-item');
+    const items = Array.from(cardsContainer.querySelectorAll<HTMLElement>('.habit-drag-item'));
     for (const item of items) {
       item.classList.remove('drag-over-top', 'drag-over-bottom');
     }
@@ -213,19 +214,20 @@ export function renderTodayView(container: HTMLElement, plugin: HabitTrackerPlug
   });
 
   // Track the dragged item via dragstart on the container
-  cardsContainer.addEventListener('dragstart', (e) => {
+  cardsContainer.addEventListener('dragstart', (e: DragEvent) => {
     const target = e.target as Element;
     draggedItem = target.closest('.habit-drag-item');
   });
 
-  cardsContainer.addEventListener('drop', (e) => {
+  cardsContainer.addEventListener('drop', (e: DragEvent) => {
     e.preventDefault();
     const fromIdx = parseInt(e.dataTransfer!.getData('text/plain'));
     const target = e.target as Element;
     const closestItem = target.closest('.habit-drag-item');
     if (!closestItem || closestItem === draggedItem) return;
-    const toItems = cardsContainer.querySelectorAll('.habit-drag-item');
-    let toIdx = toItems.indexOf(closestItem);
+    const closestItemHtEl = closestItem as HTMLElement;
+    const toItems = Array.from(cardsContainer.querySelectorAll<HTMLElement>('.habit-drag-item'));
+    let toIdx = toItems.indexOf(closestItemHtEl);
     const rect = closestItem.getBoundingClientRect();
     const midY = rect.top + rect.height / 2;
     if (e.clientY > midY) toIdx++;

@@ -3,28 +3,15 @@ import type { App, TAbstractFile, TFile } from 'obsidian';
 import type { Tracker, Habit, CompletionMap, CompletionStatus } from './types';
 import { DEFAULT_HABITS_FILE } from './types';
 
-// Lazy import of TFile constructor to avoid bundling obsidian in test environments
-let _TFileCtor: typeof TFile | undefined;
-function getTFileCtor(): typeof TFile | undefined {
-  if (_TFileCtor !== undefined) return _TFileCtor;
-  try {
-    const obsidian = require('obsidian') as { TFile?: new (...args: never[]) => TFile };
-    _TFileCtor = obsidian.TFile as typeof TFile | undefined;
-  } catch {
-    // Not in Obsidian environment (e.g., tests)
-    _TFileCtor = undefined;
-  }
-  return _TFileCtor;
+// Runtime-safe check for TFile without requiring the obsidian package at build time
+function isTFileType(file: TAbstractFile | null): boolean {
+  if (!file) return false;
+  // In Obsidian, TFile instances have constructor name 'TFile'; in tests they won't
+  return file.constructor.name === 'TFile';
 }
 
 export function isTFile(file: TAbstractFile | null): file is TFile {
-  if (!file) return false;
-  const TFileCtor = getTFileCtor();
-  if (TFileCtor && typeof TFileCtor === 'function') {
-    return file instanceof TFileCtor;
-  }
-  // Fallback: check constructor name when the class is not directly accessible
-  return file.constructor.name === 'TFile';
+  return isTFileType(file);
 }
 
 interface RawYaml {
@@ -89,15 +76,15 @@ export function parseTrackerFile(content: string): Tracker | null {
   const yamlMatch = content.match(/^---\n([\s\S]*?)\n---/);
   if (!yamlMatch) return null;
 
-  let raw: unknown;
+  let parsed: unknown;
   try {
-    raw = yaml.parse(yamlMatch[1]);
+    parsed = yaml.parse(yamlMatch[1]);
   } catch {
     return null;
   }
 
-  if (!raw || typeof raw !== 'object' || !('habits' in raw)) return null;
-  const typedRaw = raw as RawYaml;
+  if (!parsed || typeof parsed !== 'object' || !('habits' in parsed)) return null;
+  const typedRaw = parsed as RawYaml;
 
   if (!typedRaw.habits || typedRaw.habits.length === 0) return null;
 
@@ -414,7 +401,7 @@ export async function writeTrackerFile(app: App, path: string, tracker: Tracker,
   const abstractFile = app.vault.getAbstractFileByPath(path);
   // If we have a file (not null, not folder), try to read it directly
   if (isTFile(abstractFile)) {
-    content = await app.vault.read(abstractFile as TFile);
+    content = await app.vault.read(abstractFile);
   } else {
     // File doesn't exist yet - generate full content
     content = generateTrackerContent(tracker, daysToShow, filterEmptyMonths);
@@ -594,8 +581,8 @@ export async function lintHabitsFile(app: App, path: string): Promise<boolean> {
   }
 
   const newContent = newLines.join('\n');
-  if (file && file.constructor.name === 'TFile') {
-    await app.vault.modify(file!, newContent);
+  if (isTFile(file)) {
+    await app.vault.modify(file, newContent);
   } else {
     await app.vault.adapter.write(path, newContent);
   }

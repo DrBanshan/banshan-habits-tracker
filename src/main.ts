@@ -1,6 +1,6 @@
-import { App, Plugin, WorkspaceLeaf, PluginSettingTab, Setting } from 'obsidian';
+import { App, Plugin, PluginSettingTab, Setting } from 'obsidian';
 import { HabitTrackerView, VIEW_TYPE_HABIT_TRACKER } from './view';
-import { init, loadHabits, toggleDay, addHabit, renameHabit, deleteHabit, setHabitColor, setViewType, setSelectedHabit, setSelectedMonth, setSelectedYear, clearError, setHabitsFilePath, getState, reorderHabits, updateSettings } from './store';
+import { init, loadHabits, toggleDay, addHabit, renameHabit, deleteHabit, setHabitColor, setViewType, setSelectedHabit, setSelectedMonth, setSelectedYear, getState, reorderHabits, updateSettings } from './store';
 import { DEFAULT_HABITS_FILE } from './types';
 import type { Habit, ViewType, Frequency, StreakMode } from './types';
 
@@ -181,9 +181,10 @@ class HabitTrackerSettingTab extends PluginSettingTab {
         .addOption('onload', 'Once upon reloading')
         .setValue(this.plugin.settings.emptyTableDetection)
         .onChange(async (value) => {
-          this.plugin.settings.emptyTableDetection = value;
+          const detectionValue = value as 'onload' | 'onchange';
+          this.plugin.settings.emptyTableDetection = detectionValue;
           await this.plugin.saveSettings();
-          updateSettings(undefined, undefined, value);
+          updateSettings(undefined, undefined, detectionValue);
         }));
 
     new Setting(containerEl)

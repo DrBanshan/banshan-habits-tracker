@@ -1,5 +1,4 @@
-import { ItemView, WorkspaceLeaf, setIcon } from 'obsidian';
-import type { TFile } from 'obsidian';
+import { ItemView, setIcon } from 'obsidian';
 import type HabitTrackerPlugin from './main';
 import type { Habit } from './types';
 import { isTFile } from './parser';
@@ -17,8 +16,9 @@ export class HabitTrackerView extends ItemView {
   plugin: HabitTrackerPlugin;
   private unsubscribeStore: (() => void) | null = null;
 
-  constructor(leaf: WorkspaceLeaf, plugin: HabitTrackerPlugin) {
-    super(leaf);
+  /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+  constructor(leaf: any, plugin: HabitTrackerPlugin) {
+    super(leaf as never);
     this.plugin = plugin;
   }
 
@@ -100,18 +100,17 @@ export class HabitTrackerView extends ItemView {
 
     // Find the card for this habit
     const cards = todaySection.querySelectorAll<HTMLElement>('.today-card');
-    let foundCard = false;
     cards.forEach(card => {
       const habitNameEl = card.querySelector('.today-habit-name');
       const cardHabitName = habitNameEl?.textContent?.trim();
       if (!cardHabitName || cardHabitName !== habitName) return;
-      foundCard = true;
 
       const todayStr = this.formatDate(new Date());
 
       // Update the week squares (they're inside .today-week-row)
-      const weekRow = card.querySelector('.today-week-row');
-      const weekSquares = weekRow?.querySelectorAll('[data-date="' + date + '"]') || [];
+      const weekRowEl = card.querySelector<HTMLElement>('.today-week-row');
+      const weekSquaresList = weekRowEl?.querySelectorAll<HTMLElement>('[data-date="' + date + '"]');
+      const weekSquares: HTMLElement[] = weekSquaresList ? Array.from(weekSquaresList) : [];
       weekSquares.forEach(sq => {
         const isTodaySq = sq.classList.contains('today');
         if (isCompleted) {
@@ -139,7 +138,7 @@ export class HabitTrackerView extends ItemView {
       if (date === todayStr) {
         // Update inline check button in .today-card-middle
         const middleSection = card.querySelector('.today-card-middle');
-        const inlineCheckBtnEl = middleSection?.querySelector('[data-date="' + date + '"]');
+        const inlineCheckBtnEl = middleSection?.querySelector<HTMLElement>('[data-date="' + date + '"]');
         if (inlineCheckBtnEl) {
           const markEl = inlineCheckBtnEl.querySelector('.today-check-mark');
           if (markEl) markEl.textContent = isCompleted ? '✓' : '';
@@ -164,7 +163,7 @@ export class HabitTrackerView extends ItemView {
 
         // Update the check button in .today-card-right
         const rightSection = card.querySelector('.today-card-right');
-        const checkBtnEl = rightSection?.querySelector('[data-date="' + date + '"]');
+        const checkBtnEl = rightSection?.querySelector<HTMLElement>('[data-date="' + date + '"]');
         if (checkBtnEl) {
           const markEl = checkBtnEl.querySelector('.today-check-mark');
           if (markEl) markEl.textContent = isCompleted ? '✓' : '';
@@ -310,7 +309,7 @@ export class HabitTrackerView extends ItemView {
           try {
             const file = this.app.vault.getAbstractFileByPath(state.habitsFilePath);
             if (isTFile(file)) {
-              await this.app.fileManager.trashFile(file, false);
+              await this.app.fileManager.trashFile(file);
             }
             await this.plugin.loadHabits();
             await this.render();
@@ -365,7 +364,7 @@ export class HabitTrackerView extends ItemView {
       habits.forEach(habit => {
         const item = dropdownMenu.createEl('div', { cls: 'habit-dropdown-item' });
         if (habit.name === this.plugin.getState().selectedHabit) item.addClass('active');
-        const habitText = item.createEl('span', { text: habit.name, cls: 'habit-item-text' });
+        item.createEl('span', { text: habit.name, cls: 'habit-item-text' });
         item.addEventListener('click', (e) => {
           e.stopPropagation();
           this.plugin.setSelectedHabit(habit.name);
@@ -441,9 +440,9 @@ export class HabitTrackerView extends ItemView {
     setIcon(settingsBtn, 'settings');
 
     settingsBtn.addEventListener('click', () => {
-      const { setting } = this.app as unknown as { setting: { open: () => void; openTabById: (id: string) => void } };
-      setting.open();
-      setting.openTabById(this.plugin.manifest.id);
+      const app = this.app as unknown as { setting: { open: () => void; openTabById: (id: string) => void } };
+      app.setting.open();
+      app.setting.openTabById(this.plugin.manifest.id);
     });
 
     return controlsSection;

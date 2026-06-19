@@ -87,7 +87,7 @@ export function renderYearView(container: HTMLElement, plugin: HabitTrackerPlugi
     }
 
     // Drag events for reordering
-    section.addEventListener('dragstart', (e) => {
+    section.addEventListener('dragstart', (e: DragEvent) => {
       e.dataTransfer!.setData('text/plain', String(idx));
       e.dataTransfer!.effectAllowed = 'move';
     });
@@ -95,10 +95,10 @@ export function renderYearView(container: HTMLElement, plugin: HabitTrackerPlugi
 
   // Drop zone handling on the container
   let draggedItem: HTMLElement | null = null;
-  container.addEventListener('dragover', (e) => {
+  container.addEventListener('dragover', (e: DragEvent) => {
     e.preventDefault();
     e.dataTransfer!.dropEffect = 'move';
-    const items = container.querySelectorAll('.habit-drag-item');
+    const items = Array.from(container.querySelectorAll<HTMLElement>('.habit-drag-item'));
     for (const item of items) {
       item.classList.remove('drag-over-top', 'drag-over-bottom');
     }
@@ -126,19 +126,20 @@ export function renderYearView(container: HTMLElement, plugin: HabitTrackerPlugi
   });
 
   // Track the dragged item
-  container.addEventListener('dragstart', (e) => {
+  container.addEventListener('dragstart', (e: DragEvent) => {
     const target = e.target as Element;
     draggedItem = target.closest('.habit-drag-item');
   });
 
-  container.addEventListener('drop', (e) => {
+  container.addEventListener('drop', (e: DragEvent) => {
     e.preventDefault();
     const fromIdx = parseInt(e.dataTransfer!.getData('text/plain'));
     const target = e.target as Element;
     const closestItem = target.closest('.habit-drag-item');
     if (!closestItem || closestItem === draggedItem) return;
-    const toItems = container.querySelectorAll('.habit-drag-item');
-    let toIdx = toItems.indexOf(closestItem);
+    const closestItemHtEl = closestItem as HTMLElement;
+    const toItems = Array.from(container.querySelectorAll<HTMLElement>('.habit-drag-item'));
+    let toIdx = toItems.indexOf(closestItemHtEl);
     const rect = closestItem.getBoundingClientRect();
     const midY = rect.top + rect.height / 2;
     if (e.clientY > midY) toIdx++;

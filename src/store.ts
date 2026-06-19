@@ -1,6 +1,6 @@
-import type { App, TFile } from 'obsidian';
+import type { App } from 'obsidian';
 import type { Tracker, Habit, CompletionMap, StreakInfo, CompletionStatus, ViewType, AppState } from './types';
-import { parseTrackerFile, writeTrackerFile, ensureDefaultTracker, readTrackerFile, lintHabitsFile, isTFile } from './parser';
+import { parseTrackerFile, writeTrackerFile, ensureDefaultTracker, lintHabitsFile, isTFile } from './parser';
 import { calculateStreak } from './streak';
 import { DEFAULT_HABITS_FILE } from './types';
 

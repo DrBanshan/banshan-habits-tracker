@@ -72,7 +72,7 @@ export class AddHabitModal extends Modal {
     // Inline custom color picker at the end of the color list
     const colorPickerRow = contentEl.createDiv({ cls: 'habit-color-picker habit-color-picker-row' });
     colorPickerRow.prepend(colorContainer);
-    const label = colorPickerRow.createEl('span', { text: 'Custom color:', cls: 'color-picker-label' });
+    colorPickerRow.createEl('span', { text: 'Custom color:', cls: 'color-picker-label' });
 
     const cpContainer = colorPickerRow.createDiv();
     const colorPicker = new ColorComponent(cpContainer);
@@ -178,7 +178,7 @@ export class EditHabitModal extends Modal {
     // Inline custom color picker at the end of the color list
     const colorPickerRow = contentEl.createDiv({ cls: 'habit-color-picker habit-color-picker-row' });
     colorPickerRow.prepend(colorContainer);
-    const label = colorPickerRow.createEl('span', { text: 'Custom color:', cls: 'color-picker-label' });
+    colorPickerRow.createEl('span', { text: 'Custom color:', cls: 'color-picker-label' });
 
     const cpContainer = colorPickerRow.createDiv();
     const colorPicker = new ColorComponent(cpContainer);
@@ -249,7 +249,7 @@ export class DeleteHabitModal extends Modal {
       .addToggle(toggle => toggle.setValue(keepData).onChange(v => { keepData = v; }));
 
     new Setting(contentEl)
-      .addButton(btn => btn.setButtonText('Delete').setWarning().onClick(async () => {
+      .addButton(btn => btn.setButtonText('Delete').setDestructive().onClick(async () => {
         this.plugin.deleteHabit(this.habitName, keepData);
         this.close();
         await this.onSubmit();

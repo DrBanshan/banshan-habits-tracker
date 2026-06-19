@@ -1,4 +1,4 @@
-# Banshan Habit Tracker
+# Banshan Habits Tracker
 
 An interactive habit tracking plugin for Obsidian with a Today view, monthly and yearly heatmap views, streak tracking (strict/forgiving), and multiple tracker support -- all powered by readable Markdown files.
 

@@ -67,10 +67,8 @@ export function renderYearOverview(container: HTMLElement, plugin: HabitTrackerP
   const currentYear = new Date().getFullYear();
   const currentMonth = new Date().getMonth();
   const isCurrentYear = state.selectedYear === currentYear;
-  const lastMonth = isCurrentYear ? currentMonth : 11;
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const todayDate = today.getDate();
 
   for (let month = 0; month < 12; month++) {
     const monthContainer = yearGrid.createEl('div', { cls: 'year-overview-month' });
@@ -79,7 +77,6 @@ export function renderYearOverview(container: HTMLElement, plugin: HabitTrackerP
     const monthDays = monthContainer.createEl('div', { cls: 'year-overview-days' });
 
     const daysInMonth = new Date(state.selectedYear, month + 1, 0).getDate();
-    const isCurrentMonth = isCurrentYear && month === currentMonth;
     const lastDay = daysInMonth;
 
     const firstOfMonth = new Date(state.selectedYear, month, 1);

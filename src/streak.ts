@@ -1,4 +1,4 @@
-import type { Habit, StreakInfo, StreakMode, CompletionStatus, CompletionMap } from './types';
+import type { Habit, StreakInfo, CompletionMap } from './types';
 
 function formatDate(date: Date): string {
   const y = date.getFullYear();
