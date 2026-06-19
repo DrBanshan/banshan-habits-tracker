@@ -277,10 +277,12 @@ export class HabitTrackerView extends ItemView {
   async render(): Promise<void> {
     const contentEl = this.containerEl.children[1];
     if (!contentEl) return;
-    (contentEl as HTMLElement).addClass('habit-tracker-container');
+    const wrapped = contentEl as HTMLElement;
+    wrapped.empty();
+    wrapped.addClass('habit-tracker-container');
 
-    const controlsEl = this.renderControls(contentEl as HTMLElement);
-    const contentWrapper = (contentEl as HTMLElement).createEl('div', { cls: 'habit-content' });
+    const controlsEl = this.renderControls(wrapped);
+    const contentWrapper = wrapped.createEl('div', { cls: 'habit-content' });
 
     const applyOffset = () => {
       try {
@@ -297,7 +299,7 @@ export class HabitTrackerView extends ItemView {
     const habits = state.habits;
 
     if (state.error) {
-      const errorEl = (contentEl as HTMLElement).createEl('div', { cls: 'no-habits-message' });
+      const errorEl = wrapped.createEl('div', { cls: 'no-habits-message' });
       errorEl.createEl('div', { text: '⚠️ Error loading habits', cls: 'error-title' });
       errorEl.createEl('div', { text: state.error, cls: 'error-detail' });
       errorEl.createEl('button', {
@@ -321,7 +323,7 @@ export class HabitTrackerView extends ItemView {
     }
 
     if (habits.length === 0) {
-      (contentEl as HTMLElement).createEl('div', { text: 'No habits yet. Click "Add" to get started!', cls: 'no-habits-message' });
+      wrapped.createEl('div', { text: 'No habits yet. Click "Add" to get started!', cls: 'no-habits-message' });
       return;
     }
 
