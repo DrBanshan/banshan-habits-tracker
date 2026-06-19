@@ -8,7 +8,7 @@ async function build() {
   const ctx = await esbuild.context({
     entryPoints: ['src/main.ts'],
     bundle: true,
-    outfile: '.obsidian/plugins/banshan-habit-tracker/main.js',
+    outfile: '.obsidian/plugins/banshan-habits-tracker/main.js',
     external: ['obsidian'],
     format: 'cjs',
     platform: 'browser',
@@ -22,7 +22,7 @@ async function build() {
         setup(build) {
           build.onEnd(() => {
             const manifestSrc = 'manifest.json';
-            const manifestDst = '.obsidian/plugins/banshan-habit-tracker/manifest.json';
+            const manifestDst = '.obsidian/plugins/banshan-habits-tracker/manifest.json';
             if (fs.existsSync(manifestSrc)) {
               fs.copyFileSync(manifestSrc, manifestDst);
               console.log('Copied manifest.json');
@@ -35,7 +35,7 @@ async function build() {
         setup(build) {
           build.onEnd(() => {
             const cssSrc = 'src/styles.css';
-            const cssDst = '.obsidian/plugins/banshan-habit-tracker/styles.css';
+            const cssDst = '.obsidian/plugins/banshan-habits-tracker/styles.css';
             if (fs.existsSync(cssSrc)) {
               fs.copyFileSync(cssSrc, cssDst);
               console.log('Copied styles.css');
