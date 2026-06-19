@@ -3,13 +3,26 @@ import type { App, TAbstractFile, TFile } from 'obsidian';
 import type { Tracker, Habit, CompletionMap, CompletionStatus } from './types';
 import { DEFAULT_HABITS_FILE } from './types';
 
-function isTFile(file: TAbstractFile | null): file is TFile {
+// Lazy import of TFile constructor to avoid bundling obsidian in test environments
+let _TFileCtor: typeof TFile | undefined;
+function getTFileCtor(): typeof TFile | undefined {
+  if (_TFileCtor) return _TFileCtor;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const obsidian = require('obsidian');
+    _TFileCtor = obsidian.TFile;
+  } catch {
+    // Not in Obsidian environment (e.g., tests)
+    _TFileCtor = undefined as never; // never so it's falsy
+  }
+  return _TFileCtor;
+}
+
+export function isTFile(file: TAbstractFile | null): file is TFile {
   if (!file) return false;
-  // Use the Obsidian global TFile constructor for instanceof check
-  const TFileCtor = (typeof globalThis !== 'undefined' && (globalThis as Record<string, unknown>).TFile) ||
-                    (typeof window !== 'undefined' && (window as Record<string, unknown>).TFile);
+  const TFileCtor = getTFileCtor();
   if (TFileCtor && typeof TFileCtor === 'function') {
-    return file instanceof (TFileCtor as new (...args: never[]) => TFile);
+    return file instanceof TFileCtor;
   }
   // Fallback: check constructor name when the class is not directly accessible
   return file.constructor.name === 'TFile';
@@ -402,8 +415,9 @@ export async function writeTrackerFile(app: App, path: string, tracker: Tracker,
   // Read existing file
   let content: string;
   const abstractFile = app.vault.getAbstractFileByPath(path);
+  // If we have a file (not null, not folder), try to read it directly
   if (isTFile(abstractFile)) {
-    content = await app.vault.read(abstractFile);
+    content = await app.vault.read(abstractFile as TFile);
   } else {
     // File doesn't exist yet - generate full content
     content = generateTrackerContent(tracker, daysToShow, filterEmptyMonths);
@@ -499,7 +513,7 @@ export async function writeTrackerFile(app: App, path: string, tracker: Tracker,
     }
   }
 
-  await app.vault.modify(abstractFile, content);
+  await app.vault.modify(abstractFile as TFile, content);
 }
 
 /**

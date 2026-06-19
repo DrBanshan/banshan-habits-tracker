@@ -2,6 +2,7 @@ import { ItemView, WorkspaceLeaf, setIcon } from 'obsidian';
 import type { TFile } from 'obsidian';
 import type HabitTrackerPlugin from './main';
 import type { Habit } from './types';
+import { isTFile } from './parser';
 import { renderTodayView } from './views/today';
 import { renderMonthView } from './views/month';
 import { renderYearView } from './views/year';
@@ -306,7 +307,7 @@ export class HabitTrackerView extends ItemView {
         void (async () => {
           try {
             const file = this.app.vault.getAbstractFileByPath(state.habitsFilePath);
-            if (file && file.constructor.name === 'TFile') {
+            if (isTFile(file)) {
               await this.app.fileManager.trashFile(file, false);
             }
             await this.plugin.loadHabits();
