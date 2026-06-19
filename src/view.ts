@@ -70,7 +70,7 @@ export class HabitTrackerView extends ItemView {
     }
 
     // Find all cells for this habit with the matching data-date attribute
-    const cells = container.querySelectorAll(`[data-habit="${habitName}"][data-date="${date}"]`);
+    const cells = container.querySelectorAll<HTMLElement>(`[data-habit="${habitName}"][data-date="${date}"]`);
     cells.forEach(cell => {
       if (isCompleted) {
         cell.addClass('completed');
@@ -95,11 +95,11 @@ export class HabitTrackerView extends ItemView {
   }
 
   private updateTodayViewInPlace(habitName: string, date: string, isCompleted: boolean, habit: Habit): void {
-    const todaySection = this.containerEl.querySelector('.today-overview');
+    const todaySection = this.containerEl.querySelector<HTMLElement>('.today-overview');
     if (!todaySection) return;
 
     // Find the card for this habit
-    const cards = todaySection.querySelectorAll('.today-card');
+    const cards = todaySection.querySelectorAll<HTMLElement>('.today-card');
     let foundCard = false;
     cards.forEach(card => {
       const habitNameEl = card.querySelector('.today-habit-name');
@@ -275,16 +275,16 @@ export class HabitTrackerView extends ItemView {
   }
 
   async render(): Promise<void> {
-    const container = this.containerEl.children[1] as HTMLElement;
-    container.empty();
-    container.addClass('habit-tracker-container');
+    const contentEl = this.containerEl.children[1];
+    if (!contentEl) return;
+    (contentEl as HTMLElement).addClass('habit-tracker-container');
 
-    const controlsEl = this.renderControls(container);
+    const controlsEl = this.renderControls(contentEl as HTMLElement);
     const contentWrapper = container.createEl('div', { cls: 'habit-content' });
 
     const applyOffset = () => {
       try {
-        const h = controlsEl.getBoundingClientRect().height || 0;
+        const h = (controlsEl as HTMLElement).getBoundingClientRect().height || 0;
         const offset = Math.max(4, Math.ceil(h * 0.4));
         contentWrapper.style.setProperty('--content-offset', `${offset}px`);
       } catch { /* ignore */ }
@@ -439,8 +439,9 @@ export class HabitTrackerView extends ItemView {
     setIcon(settingsBtn, 'settings');
 
     settingsBtn.addEventListener('click', () => {
-      this.app.setting.open();
-      this.app.setting.openTabById(this.plugin.manifest.id);
+      const { setting } = this.app as unknown as { setting: { open: () => void; openTabById: (id: string) => void } };
+      setting.open();
+      setting.openTabById(this.plugin.manifest.id);
     });
 
     return controlsSection;

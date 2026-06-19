@@ -158,7 +158,7 @@ export function toggleDay(habitName: string, date: string) {
     habitName,
     date
   });
-  void persist(newCompletions, current.habits, date);
+  void persist(newCompletions, current.habits, date).catch(() => { /* handled in persist */ });
 }
 
 export function addHabit(habit: Habit) {

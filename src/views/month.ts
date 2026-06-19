@@ -8,8 +8,6 @@ export function renderMonthView(container: HTMLElement, plugin: HabitTrackerPlug
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const weekDaysShort = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
-
   // Use CSS grid for dynamic wrapping
   container.addClass('month-grid-container');
 

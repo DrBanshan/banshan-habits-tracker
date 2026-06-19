@@ -16,12 +16,10 @@ export function renderYearView(container: HTMLElement, plugin: HabitTrackerPlugi
     header.createEl('div', { text: habit.name, cls: 'habit-name' });
 
     const headerYearSelector = header.createEl('div', { cls: 'github-year-selector' });
-    
+
     const yearContainer = section.createEl('div', { cls: 'github-year-container' });
-    yearContainer.addClass('github-year-container');
-    
+
     const graphContainer = yearContainer.createEl('div', { cls: 'github-graph-container' });
-    graphContainer.addClass('github-graph-container');
     
     const grid = graphContainer.createEl('div', { cls: 'github-square-grid' });
 

@@ -2,7 +2,7 @@ import { App, Plugin, WorkspaceLeaf, PluginSettingTab, Setting } from 'obsidian'
 import { HabitTrackerView, VIEW_TYPE_HABIT_TRACKER } from './view';
 import { init, loadHabits, toggleDay, addHabit, renameHabit, deleteHabit, setHabitColor, setViewType, setSelectedHabit, setSelectedMonth, setSelectedYear, clearError, setHabitsFilePath, getState, reorderHabits, updateSettings } from './store';
 import { DEFAULT_HABITS_FILE } from './types';
-import type { Habit, ViewType } from './types';
+import type { Habit, ViewType, Frequency, StreakMode } from './types';
 
 interface PluginSettings {
   habitsFilePath: string;
@@ -15,7 +15,7 @@ interface PluginSettings {
 const DEFAULT_SETTINGS: PluginSettings = { habitsFilePath: DEFAULT_HABITS_FILE, todayViewDays: 7, keepDeletedData: true, emptyTableDetection: 'onload', debugMode: false };
 
 export default class HabitTrackerPlugin extends Plugin {
-  settings: PluginSettings = DEFAULT_SETTINGS;
+  settings!: PluginSettings;
 
   async onload(): Promise<void> {
     console.log('[HabitTracker] Loading plugin...');
@@ -82,7 +82,11 @@ export default class HabitTrackerPlugin extends Plugin {
       this.settings = DEFAULT_SETTINGS;
       return;
     }
-    const safe = raw as Partial<PluginSettings>;
+    const safe = raw as Partial<PluginSettings> | null;
+    if (!safe) {
+      this.settings = DEFAULT_SETTINGS;
+      return;
+    }
     this.settings = {
       habitsFilePath: safe.habitsFilePath || DEFAULT_HABITS_FILE,
       todayViewDays: safe.todayViewDays ?? 7,
@@ -102,16 +106,13 @@ export default class HabitTrackerPlugin extends Plugin {
   addHabit(habit: Habit) { addHabit(habit); void this.refreshView(); }
   renameHabit(oldName: string, newName: string) { renameHabit(oldName, newName); void this.refreshView(); }
   deleteHabit(habitName: string, keepData?: boolean) { deleteHabit(habitName, keepData); void this.refreshView(); }
-  updateHabitDetails(name: string, icon: string, color: string, frequency: string, streakMode: string, specificDays?: string[]) {
+  updateHabitDetails(name: string, icon: string, color: string, frequency: Frequency, streakMode: StreakMode, specificDays?: string[]) {
     setHabitColor(name, color);
     void this.refreshView();
   }
-  getHabit(name: string) { return getState().habits.find(h => h.name === name); }
-  setViewType(viewType: string) {
-    const validTypes = ['today', 'month', 'yearOverview', 'year'] as const;
-    if (validTypes.includes(viewType as typeof validTypes[number])) {
-      setViewType(viewType as ViewType);
-    }
+  getHabit(name: string): Habit | undefined { return getState().habits.find(h => h.name === name); }
+  setViewType(viewType: ViewType) {
+    setViewType(viewType);
     void this.refreshView();
   }
   setSelectedHabit(habitName: string) { setSelectedHabit(habitName); void this.refreshView(); }

@@ -6,13 +6,13 @@ import { DEFAULT_HABITS_FILE } from './types';
 // Lazy import of TFile constructor to avoid bundling obsidian in test environments
 let _TFileCtor: typeof TFile | undefined;
 function getTFileCtor(): typeof TFile | undefined {
-  if (_TFileCtor) return _TFileCtor;
+  if (_TFileCtor !== undefined) return _TFileCtor;
   try {
-    const obsidian = require('obsidian');
-    _TFileCtor = obsidian.TFile;
+    const obsidian = require('obsidian') as { TFile?: new (...args: never[]) => TFile };
+    _TFileCtor = obsidian.TFile as typeof TFile | undefined;
   } catch {
     // Not in Obsidian environment (e.g., tests)
-    _TFileCtor = undefined as never; // never so it's falsy
+    _TFileCtor = undefined;
   }
   return _TFileCtor;
 }
@@ -45,7 +45,7 @@ function stripIcon(text: string): string {
   return text.replace(/[\u{100}-\u{10FFFF}]+\s*/u, '');
 }
 
-function parseHabit(raw: RawYaml['habits'][0]): Habit {
+function parseHabit(raw: { name: string; icon: string; frequency: string; specificDays?: string[]; streakMode: string; startDate: string; color?: string }): Habit {
   return {
     name: raw.name,
     icon: raw.icon,
@@ -89,16 +89,19 @@ export function parseTrackerFile(content: string): Tracker | null {
   const yamlMatch = content.match(/^---\n([\s\S]*?)\n---/);
   if (!yamlMatch) return null;
 
-  let raw: RawYaml;
+  let raw: unknown;
   try {
-    raw = yaml.parse(yamlMatch[1]) as RawYaml;
+    raw = yaml.parse(yamlMatch[1]);
   } catch {
     return null;
   }
 
-  if (!raw || !raw.habits || raw.habits.length === 0) return null;
+  if (!raw || typeof raw !== 'object' || !('habits' in raw)) return null;
+  const typedRaw = raw as RawYaml;
 
-  const habits = raw.habits.map(parseHabit);
+  if (!typedRaw.habits || typedRaw.habits.length === 0) return null;
+
+  const habits = typedRaw.habits.map(parseHabit);
   const completions: CompletionMap = {};
   for (const habit of habits) {
     completions[habit.name] = {};
@@ -142,8 +145,8 @@ export function parseTrackerFile(content: string): Tracker | null {
   }
 
   return {
-    name: raw.name,
-    created: raw.created,
+    name: typedRaw.name,
+    created: typedRaw.created,
     habits,
     completions
   };
@@ -197,9 +200,9 @@ function parseTableSection(
 function findMonthsWithData(completions: CompletionMap): Array<{ year: number; month: number }> {
   const monthSet = new Set<string>();
   
-  for (const habitName in completions) {
+  for (const habitName of Object.keys(completions)) {
     const entries = completions[habitName];
-    for (const dateStr in entries) {
+    for (const dateStr of Object.keys(entries)) {
       const status = entries[dateStr];
       // Only count months with actual data (completed or missed), not unmarked
       if (status === 'completed' || status === 'missed') {
@@ -224,11 +227,6 @@ function findMonthsWithData(completions: CompletionMap): Array<{ year: number; m
   return result;
 }
 
-/**
- * Generate tracker content with only months that have data.
- * Current month is always included. Each month's table only includes
- * habits that have data in that specific month.
- */
 /**
  * Generate tracker content.
  * @param filterEmptyMonths - If true, only write months with actual data. If false, write all months from earliest data to current month.
@@ -512,7 +510,7 @@ export async function writeTrackerFile(app: App, path: string, tracker: Tracker,
     }
   }
 
-  await app.vault.modify(abstractFile as TFile, content);
+  await app.vault.modify(abstractFile!, content);
 }
 
 /**
@@ -597,7 +595,7 @@ export async function lintHabitsFile(app: App, path: string): Promise<boolean> {
 
   const newContent = newLines.join('\n');
   if (file && file.constructor.name === 'TFile') {
-    await app.vault.modify(file as TFile, newContent);
+    await app.vault.modify(file!, newContent);
   } else {
     await app.vault.adapter.write(path, newContent);
   }

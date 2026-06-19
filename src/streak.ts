@@ -1,4 +1,4 @@
-import { Habit, StreakInfo, StreakMode, CompletionStatus } from './types';
+import type { Habit, StreakInfo, StreakMode, CompletionStatus, CompletionMap } from './types';
 
 function formatDate(date: Date): string {
   const y = date.getFullYear();
@@ -33,7 +33,7 @@ function getActiveDates(habit: Habit, startDate: string, endDate: string): Date[
   return dates;
 }
 
-export function calculateStreak(habit: Habit, completions: Record<string, Record<string, CompletionStatus>>): StreakInfo {
+export function calculateStreak(habit: Habit, completions: CompletionMap): StreakInfo {
   const today = formatDate(new Date());
   const startDate = habit.startDate;
 
@@ -48,7 +48,7 @@ export function calculateStreak(habit: Habit, completions: Record<string, Record
   return { current: currentStreak, longest: longestStreak };
 }
 
-function calcCurrentStreak(habit: Habit, activeDates: Date[], completions: Record<string, Record<string, CompletionStatus>>): number {
+function calcCurrentStreak(habit: Habit, activeDates: Date[], completions: CompletionMap): number {
   let startIdx = activeDates.length - 1;
   while (startIdx >= 0) {
     const date = formatDate(activeDates[startIdx]);
@@ -103,7 +103,7 @@ function calcCurrentStreak(habit: Habit, activeDates: Date[], completions: Recor
   return streak;
 }
 
-function calcLongestStreak(habit: Habit, activeDates: Date[], completions: Record<string, Record<string, CompletionStatus>>): number {
+function calcLongestStreak(habit: Habit, activeDates: Date[], completions: CompletionMap): number {
   let longest = 0;
   let current = 0;
   let gapUsed = false;
