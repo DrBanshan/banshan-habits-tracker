@@ -57,7 +57,7 @@ The following features are planned but not yet implemented:
 
 2. Copy the output to your Obsidian vault's plugins folder:
    ```
-   .obsidian/plugins/banshan-habits-tracker/
+   .obsidian/plugins/banshan-habit-tracker/
    ```
 
 3. Enable the plugin in **Settings -> Community plugins -> Turn on community plugins**, then find and enable **Banshan Habit Tracker**.
@@ -216,7 +216,7 @@ npx vitest
 
 | Script | Description |
 |--------|-------------|
-| `npm run build` | Production build to `.obsidian/plugins/banshan-habits-tracker/` |
+| `npm run build` | Production build to `.obsidian/plugins/banshan-habit-tracker/` |
 | `npm run dev` | Watch mode -- rebuilds on file changes |
 | `npm test` | Run all tests |
 | `npm run test:watch` | Tests in watch mode |
@@ -232,7 +232,7 @@ npm run build
 npm run typecheck
 ```
 
-Output is placed in `.obsidian/plugins/banshan-habits-tracker/`:
+Output is placed in `.obsidian/plugins/banshan-habit-tracker/`:
 - `main.js` -- Bundled plugin code
 - `styles.css` -- Stylesheet
 - `manifest.json` -- Plugin manifest (copied from root)
@@ -254,6 +254,6 @@ Output is placed in `.obsidian/plugins/banshan-habits-tracker/`:
 
 ## Troubleshooting
 
-- **Plugin not showing** -- Ensure the output is in `.obsidian/plugins/banshan-habits-tracker/` and the plugin is enabled in settings
+- **Plugin not showing** -- Ensure the output is in `.obsidian/plugins/banshan-habit-tracker/` and the plugin is enabled in settings
 - **Tracker not discovered** -- The file must contain `habits:` in the YAML frontmatter and have `.md` extension
 - **Streaks showing 0** -- Make sure you have completed entries for recent days; streaks count backward from the most recent recorded day

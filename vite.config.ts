@@ -8,7 +8,7 @@ export default defineConfig({
   plugins: [],
   build: {
     target: 'es2018',
-    outDir: '.obsidian/plugins/banshan-habits-tracker',
+    outDir: '.obsidian/plugins/banshan-habit-tracker',
     emptyOutDir: true,
     rollupOptions: {
       input: './src/main.ts',
