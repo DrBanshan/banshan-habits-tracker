@@ -280,7 +280,7 @@ export class HabitTrackerView extends ItemView {
     (contentEl as HTMLElement).addClass('habit-tracker-container');
 
     const controlsEl = this.renderControls(contentEl as HTMLElement);
-    const contentWrapper = container.createEl('div', { cls: 'habit-content' });
+    const contentWrapper = (contentEl as HTMLElement).createEl('div', { cls: 'habit-content' });
 
     const applyOffset = () => {
       try {
@@ -297,7 +297,7 @@ export class HabitTrackerView extends ItemView {
     const habits = state.habits;
 
     if (state.error) {
-      const errorEl = container.createEl('div', { cls: 'no-habits-message' });
+      const errorEl = (contentEl as HTMLElement).createEl('div', { cls: 'no-habits-message' });
       errorEl.createEl('div', { text: '⚠️ Error loading habits', cls: 'error-title' });
       errorEl.createEl('div', { text: state.error, cls: 'error-detail' });
       errorEl.createEl('button', {
@@ -321,7 +321,7 @@ export class HabitTrackerView extends ItemView {
     }
 
     if (habits.length === 0) {
-      container.createEl('div', { text: 'No habits yet. Click "Add" to get started!', cls: 'no-habits-message' });
+      (contentEl as HTMLElement).createEl('div', { text: 'No habits yet. Click "Add" to get started!', cls: 'no-habits-message' });
       return;
     }
 
