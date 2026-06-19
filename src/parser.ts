@@ -399,15 +399,14 @@ export async function writeTrackerFile(app: App, path: string, tracker: Tracker,
   // Read existing file
   let content: string;
   const abstractFile = app.vault.getAbstractFileByPath(path);
-  // If we have a file (not null, not folder), try to read it directly
-  if (isTFile(abstractFile)) {
-    content = await app.vault.read(abstractFile);
-  } else {
+  if (!isTFile(abstractFile)) {
     // File doesn't exist yet - generate full content
     content = generateTrackerContent(tracker, daysToShow, filterEmptyMonths);
     await app.vault.adapter.write(path, content);
     return;
   }
+  const file = abstractFile; // narrowed to TFile by isTFile guard
+  content = await app.vault.read(file);
 
   const lines = content.split('\n');
 
@@ -497,7 +496,7 @@ export async function writeTrackerFile(app: App, path: string, tracker: Tracker,
     }
   }
 
-  await app.vault.modify(abstractFile!, content);
+  await app.vault.modify(file, content);
 }
 
 /**

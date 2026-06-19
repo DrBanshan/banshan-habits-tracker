@@ -88,8 +88,8 @@ export function renderYearView(container: HTMLElement, plugin: HabitTrackerPlugi
 
     // Drag events for reordering
     section.addEventListener('dragstart', (e: DragEvent) => {
-      e.dataTransfer!.setData('text/plain', String(idx));
-      e.dataTransfer!.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', String(idx));
+      e.dataTransfer.effectAllowed = 'move';
     });
   });
 
@@ -97,7 +97,7 @@ export function renderYearView(container: HTMLElement, plugin: HabitTrackerPlugi
   let draggedItem: HTMLElement | null = null;
   container.addEventListener('dragover', (e: DragEvent) => {
     e.preventDefault();
-    e.dataTransfer!.dropEffect = 'move';
+    e.dataTransfer.dropEffect = 'move';
     const items = Array.from(container.querySelectorAll<HTMLElement>('.habit-drag-item'));
     for (const item of items) {
       item.classList.remove('drag-over-top', 'drag-over-bottom');
@@ -133,7 +133,7 @@ export function renderYearView(container: HTMLElement, plugin: HabitTrackerPlugi
 
   container.addEventListener('drop', (e: DragEvent) => {
     e.preventDefault();
-    const fromIdx = parseInt(e.dataTransfer!.getData('text/plain'));
+    const fromIdx = parseInt(e.dataTransfer.getData('text/plain'));
     const target = e.target as Element;
     const closestItem = target.closest('.habit-drag-item');
     if (!closestItem || closestItem === draggedItem) return;

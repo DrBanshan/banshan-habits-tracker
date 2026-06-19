@@ -16,8 +16,8 @@ export class HabitTrackerView extends ItemView {
   plugin: HabitTrackerPlugin;
   private unsubscribeStore: (() => void) | null = null;
 
-  /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-  constructor(leaf: any, plugin: HabitTrackerPlugin) {
+  // Obsidian passes WorkspaceLeaf but the type isn't exported in a usable way here
+  constructor(leaf: { view: unknown }, plugin: HabitTrackerPlugin) {
     super(leaf as never);
     this.plugin = plugin;
   }
@@ -285,7 +285,7 @@ export class HabitTrackerView extends ItemView {
 
     const applyOffset = () => {
       try {
-        const h = (controlsEl as HTMLElement).getBoundingClientRect().height || 0;
+        const h = controlsEl.getBoundingClientRect().height || 0;
         const offset = Math.max(4, Math.ceil(h * 0.4));
         contentWrapper.style.setProperty('--content-offset', `${offset}px`);
       } catch { /* ignore */ }

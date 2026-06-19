@@ -35,7 +35,7 @@ export class AddHabitModal extends Modal {
         icon = emoji;
         emojiContainer.querySelectorAll('.emoji-option').forEach(b => b.classList.remove('selected'));
         btn.classList.add('selected');
-        if (textInput) textInput.setValue(icon);
+        if (textInput !== undefined) textInput.setValue(icon);
       });
     });
 
@@ -151,7 +151,7 @@ export class EditHabitModal extends Modal {
         icon = emoji;
         emojiContainer.querySelectorAll('.emoji-option').forEach(b => b.classList.remove('selected'));
         btn.classList.add('selected');
-        if (textInput) textInput.setValue(icon);
+        if (textInput !== undefined) textInput.setValue(icon);
       });
     });
 

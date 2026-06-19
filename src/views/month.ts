@@ -19,8 +19,8 @@ export function renderMonthView(container: HTMLElement, plugin: HabitTrackerPlug
 
     // Drag events for reordering
     habitBlock.addEventListener('dragstart', (e: DragEvent) => {
-      e.dataTransfer!.setData('text/plain', String(idx));
-      e.dataTransfer!.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', String(idx));
+      e.dataTransfer.effectAllowed = 'move';
     });
   });
 
@@ -28,7 +28,7 @@ export function renderMonthView(container: HTMLElement, plugin: HabitTrackerPlug
   let draggedItem: HTMLElement | null = null;
   container.addEventListener('dragover', (e: DragEvent) => {
     e.preventDefault();
-    e.dataTransfer!.dropEffect = 'move';
+    e.dataTransfer.dropEffect = 'move';
     const items = Array.from(container.querySelectorAll<HTMLElement>('.habit-drag-item'));
     for (const item of items) {
       item.classList.remove('drag-over-right', 'drag-over-left');
@@ -64,7 +64,7 @@ export function renderMonthView(container: HTMLElement, plugin: HabitTrackerPlug
 
   container.addEventListener('drop', (e: DragEvent) => {
     e.preventDefault();
-    const fromIdx = parseInt(e.dataTransfer!.getData('text/plain'));
+    const fromIdx = parseInt(e.dataTransfer.getData('text/plain'));
     const target = e.target as Element;
     const closestItem = target.closest('.habit-drag-item');
     if (!closestItem || closestItem === draggedItem) return;

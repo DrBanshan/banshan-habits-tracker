@@ -172,8 +172,8 @@ export function renderTodayView(container: HTMLElement, plugin: HabitTrackerPlug
     // Drag events for reordering
     card.addEventListener('dragstart', (e: DragEvent) => {
       card.addClass('dragging');
-      e.dataTransfer!.setData('text/plain', String(idx));
-      e.dataTransfer!.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', String(idx));
+      e.dataTransfer.effectAllowed = 'move';
     });
     card.addEventListener('dragend', () => {
       card.removeClass('dragging');
@@ -185,7 +185,7 @@ export function renderTodayView(container: HTMLElement, plugin: HabitTrackerPlug
   let draggedItem: HTMLElement | null = null;
   cardsContainer.addEventListener('dragover', (e: DragEvent) => {
     e.preventDefault();
-    e.dataTransfer!.dropEffect = 'move';
+    e.dataTransfer.dropEffect = 'move';
     const items = Array.from(cardsContainer.querySelectorAll<HTMLElement>('.habit-drag-item'));
     for (const item of items) {
       item.classList.remove('drag-over-top', 'drag-over-bottom');
@@ -221,7 +221,7 @@ export function renderTodayView(container: HTMLElement, plugin: HabitTrackerPlug
 
   cardsContainer.addEventListener('drop', (e: DragEvent) => {
     e.preventDefault();
-    const fromIdx = parseInt(e.dataTransfer!.getData('text/plain'));
+    const fromIdx = parseInt(e.dataTransfer.getData('text/plain'));
     const target = e.target as Element;
     const closestItem = target.closest('.habit-drag-item');
     if (!closestItem || closestItem === draggedItem) return;

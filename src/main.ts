@@ -77,7 +77,7 @@ export default class HabitTrackerPlugin extends Plugin {
   }
 
   async loadSettings(): Promise<void> {
-    const raw = await this.loadData();
+    const raw: unknown = await this.loadData();
     if (!raw) {
       this.settings = DEFAULT_SETTINGS;
       return;
