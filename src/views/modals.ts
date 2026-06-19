@@ -65,7 +65,7 @@ export class AddHabitModal extends Modal {
     let currentColor = color;
     DEFAULT_COLORS.forEach(c => {
       const swatch = colorContainer.createEl('button', { cls: `color-swatch ${c === color ? 'selected' : ''}` });
-      swatch.style.setProperty('--swatch-color', c);
+      swatch.style.backgroundColor = c;
       swatch.addEventListener('click', () => { currentColor = c; color = c; colorContainer.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected')); swatch.classList.add('selected'); });
     });
 
@@ -171,7 +171,7 @@ export class EditHabitModal extends Modal {
     let currentColor = color;
     DEFAULT_COLORS.forEach(c => {
       const swatch = colorContainer.createEl('button', { cls: `color-swatch ${c === color ? 'selected' : ''}` });
-      swatch.style.setProperty('--swatch-color', c);
+      swatch.style.backgroundColor = c;
       swatch.addEventListener('click', () => { currentColor = c; color = c; colorContainer.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected')); swatch.classList.add('selected'); });
     });
 
