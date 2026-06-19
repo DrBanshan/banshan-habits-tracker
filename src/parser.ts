@@ -8,7 +8,6 @@ let _TFileCtor: typeof TFile | undefined;
 function getTFileCtor(): typeof TFile | undefined {
   if (_TFileCtor) return _TFileCtor;
   try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
     const obsidian = require('obsidian');
     _TFileCtor = obsidian.TFile;
   } catch {
