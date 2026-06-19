@@ -405,7 +405,7 @@ export async function writeTrackerFile(app: App, path: string, tracker: Tracker,
   } else {
     // File doesn't exist yet - generate full content
     content = generateTrackerContent(tracker, daysToShow, filterEmptyMonths);
-    await app.vault.create(path, content);
+    await app.vault.adapter.write(path, content);
     return;
   }
 
