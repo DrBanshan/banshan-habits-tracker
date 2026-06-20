@@ -11,6 +11,9 @@ export function renderMonthView(container: HTMLElement, plugin: HabitTrackerPlug
   // Use CSS grid for dynamic wrapping
   container.addClass('month-grid-container');
 
+  // Cache drag items list to avoid DOM queries on every dragover event
+  let cachedItems: HTMLElement[] = [];
+
   habits.forEach((habit, idx) => {
     const habitBlock = container.createEl('div', { cls: 'month-habit-block habit-drag-item' });
     habitBlock.setAttribute('draggable', 'true');
@@ -24,36 +27,45 @@ export function renderMonthView(container: HTMLElement, plugin: HabitTrackerPlug
     });
   });
 
+  // Populate cache after all drag items are created
+  cachedItems = Array.from(container.querySelectorAll<HTMLElement>('.habit-drag-item'));
+
   // Drop zone handling on the container
   let draggedItem: HTMLElement | null = null;
+  let rafId: number | null = null;
   container.addEventListener('dragover', (e: DragEvent) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
-    const items = Array.from(container.querySelectorAll<HTMLElement>('.habit-drag-item'));
-    for (const item of items) {
-      item.classList.remove('drag-over-right', 'drag-over-left');
-    }
-    // Find the closest block to the cursor with a generous zone
-    let bestItem: HTMLElement | null = null;
-    let bestDist = Infinity;
-    for (const item of items) {
-      const rect = item.getBoundingClientRect();
-      const centerX = rect.left + rect.width / 2;
-      const dist = Math.abs(e.clientX - centerX);
-      if (item !== draggedItem && dist < bestDist) {
-        bestDist = dist;
-        bestItem = item;
+    // Throttle to one layout calculation per frame
+    if (rafId !== null) return;
+    rafId = window.requestAnimationFrame(() => {
+      rafId = null;
+      const items = cachedItems;
+      for (const item of items) {
+        item.classList.remove('drag-over-right', 'drag-over-left');
       }
-    }
-    if (bestItem) {
-      const rect = bestItem.getBoundingClientRect();
-      const midX = rect.left + rect.width / 2;
-      if (e.clientX < midX) {
-        bestItem.classList.add('drag-over-left');
-      } else {
-        bestItem.classList.add('drag-over-right');
+      // Find the closest block to the cursor with a generous zone
+      let bestItem: HTMLElement | null = null;
+      let bestDist = Infinity;
+      for (const item of items) {
+        const rect = item.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const dist = Math.abs(e.clientX - centerX);
+        if (item !== draggedItem && dist < bestDist) {
+          bestDist = dist;
+          bestItem = item;
+        }
       }
-    }
+      if (bestItem) {
+        const rect = bestItem.getBoundingClientRect();
+        const midX = rect.left + rect.width / 2;
+        if (e.clientX < midX) {
+          bestItem.classList.add('drag-over-left');
+        } else {
+          bestItem.classList.add('drag-over-right');
+        }
+      }
+    });
   });
 
   // Track the dragged item
@@ -69,12 +81,21 @@ export function renderMonthView(container: HTMLElement, plugin: HabitTrackerPlug
     const closestItem = target.closest('.habit-drag-item');
     if (!closestItem || closestItem === draggedItem) return;
     const closestItemHtEl = closestItem as HTMLElement;
-    const toItems = Array.from(container.querySelectorAll<HTMLElement>('.habit-drag-item'));
+    const toItems = cachedItems;
     let toIdx = toItems.indexOf(closestItemHtEl);
     const rect = closestItem.getBoundingClientRect();
     const midX = rect.left + rect.width / 2;
     if (e.clientX > midX) toIdx++;
     if (fromIdx !== toIdx) {
+      // Reorder DOM nodes in place first (avoids full re-render)
+      const fromItem = container.children[fromIdx];
+      const toItem = container.children[toIdx];
+      if (fromIdx < toIdx) {
+        toItem.after(fromItem);
+      } else {
+        toItem.before(fromItem);
+      }
+      // Then update the store
       plugin.reorderHabits(fromIdx, toIdx);
     }
   });

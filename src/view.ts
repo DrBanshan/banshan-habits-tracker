@@ -35,12 +35,63 @@ export class HabitTrackerView extends ItemView {
       } else if (payload && payload.type === 'toggle') {
         // Toggle for a habit not in current view — skip in-place update
         // The view will be updated on next interaction or manual refresh
+      } else if (payload && payload.type === 'reorder') {
+        // Reorder DOM nodes in place instead of full re-render
+        this.repositionDragItems();
       } else {
         // Full re-render for other changes
         void this.render();
       }
     });
     await this.render();
+  }
+
+  /**
+   * Reposition DOM drag items to match the current habit order in state.
+   * This avoids a full re-render by moving existing DOM nodes instead of rebuilding them.
+   */
+  private repositionDragItems(): void {
+    const state = this.plugin.getState();
+    const habits = state.habits;
+
+    // Find the content area that holds drag items
+    const contentWrapper = this.containerEl.querySelector('.habit-content');
+    if (!contentWrapper) return;
+
+    // Collect all current drag items in DOM order
+    const dragItems = Array.from(
+      contentWrapper.querySelectorAll<HTMLElement>('.habit-drag-item')
+    );
+    if (dragItems.length === 0 || dragItems.length !== habits.length) return;
+
+    // Create a map from habit name to its current DOM position
+    const nameToDomIndex = new Map<string, number>();
+    dragItems.forEach((item, i) => {
+      const idx = parseInt(item.getAttribute('data-habit-index') || '-1', 10);
+      if (idx >= 0 && idx < habits.length) {
+        nameToDomIndex.set(habits[idx].name, i);
+      }
+    });
+
+    // Reorder DOM nodes to match the new state order
+    for (let i = 0; i < habits.length; i++) {
+      const habitName = habits[i].name;
+      const currentDomIdx = nameToDomIndex.get(habitName);
+      if (currentDomIdx !== undefined && currentDomIdx !== i) {
+        const targetNode = dragItems[currentDomIdx];
+        // Remove from its current position in the DOM
+        targetNode.remove();
+        // Insert at the correct position
+        if (i < dragItems.length) {
+          dragItems[i].before(targetNode);
+        } else {
+          contentWrapper.appendChild(targetNode);
+        }
+        // Update cached references
+        dragItems.splice(currentDomIdx, 1);
+        dragItems.splice(i, 0, targetNode);
+      }
+    }
   }
 
   async onClose(): Promise<void> {

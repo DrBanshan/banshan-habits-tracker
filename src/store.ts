@@ -290,6 +290,7 @@ export function reorderHabits(fromIndex: number, toIndex: number) {
   const newHabits = [...current.habits];
   const [moved] = newHabits.splice(fromIndex, 1);
   newHabits.splice(toIndex, 0, moved);
+  // Notify without triggering a full re-render — the view handles DOM reordering directly
   setState(s => ({ ...s, habits: newHabits }), { type: 'reorder' });
   void persist(current.completions, newHabits);
 }

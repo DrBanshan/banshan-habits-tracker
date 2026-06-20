@@ -7,6 +7,9 @@ export function renderYearView(container: HTMLElement, plugin: HabitTrackerPlugi
 
   const currentYear = new Date().getFullYear();
 
+  // Cache drag items list to avoid DOM queries on every dragover event
+  let cachedItems: HTMLElement[] = [];
+
   habits.forEach((habit, idx) => {
     const section = container.createEl('div', { cls: 'habit-section github-style habit-drag-item' });
     section.setAttribute('draggable', 'true');
@@ -93,36 +96,45 @@ export function renderYearView(container: HTMLElement, plugin: HabitTrackerPlugi
     });
   });
 
+  // Populate cache after all drag items are created
+  cachedItems = Array.from(container.querySelectorAll<HTMLElement>('.habit-drag-item'));
+
   // Drop zone handling on the container
   let draggedItem: HTMLElement | null = null;
+  let rafId: number | null = null;
   container.addEventListener('dragover', (e: DragEvent) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
-    const items = Array.from(container.querySelectorAll<HTMLElement>('.habit-drag-item'));
-    for (const item of items) {
-      item.classList.remove('drag-over-top', 'drag-over-bottom');
-    }
-    // Find the closest section to the cursor with a generous zone
-    let bestItem: HTMLElement | null = null;
-    let bestDist = Infinity;
-    for (const item of items) {
-      const rect = item.getBoundingClientRect();
-      const centerY = rect.top + rect.height / 2;
-      const dist = Math.abs(e.clientY - centerY);
-      if (item !== draggedItem && dist < bestDist) {
-        bestDist = dist;
-        bestItem = item;
+    // Throttle to one layout calculation per frame
+    if (rafId !== null) return;
+    rafId = window.requestAnimationFrame(() => {
+      rafId = null;
+      const items = cachedItems;
+      for (const item of items) {
+        item.classList.remove('drag-over-top', 'drag-over-bottom');
       }
-    }
-    if (bestItem) {
-      const rect = bestItem.getBoundingClientRect();
-      const midY = rect.top + rect.height / 2;
-      if (e.clientY < midY) {
-        bestItem.classList.add('drag-over-top');
-      } else {
-        bestItem.classList.add('drag-over-bottom');
+      // Find the closest section to the cursor with a generous zone
+      let bestItem: HTMLElement | null = null;
+      let bestDist = Infinity;
+      for (const item of items) {
+        const rect = item.getBoundingClientRect();
+        const centerY = rect.top + rect.height / 2;
+        const dist = Math.abs(e.clientY - centerY);
+        if (item !== draggedItem && dist < bestDist) {
+          bestDist = dist;
+          bestItem = item;
+        }
       }
-    }
+      if (bestItem) {
+        const rect = bestItem.getBoundingClientRect();
+        const midY = rect.top + rect.height / 2;
+        if (e.clientY < midY) {
+          bestItem.classList.add('drag-over-top');
+        } else {
+          bestItem.classList.add('drag-over-bottom');
+        }
+      }
+    });
   });
 
   // Track the dragged item
@@ -138,12 +150,21 @@ export function renderYearView(container: HTMLElement, plugin: HabitTrackerPlugi
     const closestItem = target.closest('.habit-drag-item');
     if (!closestItem || closestItem === draggedItem) return;
     const closestItemHtEl = closestItem as HTMLElement;
-    const toItems = Array.from(container.querySelectorAll<HTMLElement>('.habit-drag-item'));
+    const toItems = cachedItems;
     let toIdx = toItems.indexOf(closestItemHtEl);
     const rect = closestItem.getBoundingClientRect();
     const midY = rect.top + rect.height / 2;
     if (e.clientY > midY) toIdx++;
     if (fromIdx !== toIdx) {
+      // Reorder DOM nodes in place first (avoids full re-render)
+      const fromItem = container.children[fromIdx];
+      const toItem = container.children[toIdx];
+      if (fromIdx < toIdx) {
+        toItem.after(fromItem);
+      } else {
+        toItem.before(fromItem);
+      }
+      // Then update the store
       plugin.reorderHabits(fromIdx, toIdx);
     }
   });
