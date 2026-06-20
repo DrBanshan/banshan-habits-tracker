@@ -50,6 +50,15 @@ export class HabitTrackerView extends ItemView {
    * Reposition DOM drag items to match the current habit order in state.
    * This avoids a full re-render by moving existing DOM nodes instead of rebuilding them.
    */
+  /**
+   * Disconnect ResizeObserver on today view to prevent memory leaks.
+   */
+  private disconnectTodayResizeObserver(): void {
+    const todaySection = this.containerEl.querySelector('.today-overview');
+    const observer = (todaySection as HTMLElement & { __compactObserver?: ResizeObserver })?.__compactObserver;
+    observer?.disconnect();
+  }
+
   private repositionDragItems(): void {
     const state = this.plugin.getState();
     const habits = state.habits;
@@ -99,6 +108,7 @@ export class HabitTrackerView extends ItemView {
       this.unsubscribeStore();
       this.unsubscribeStore = null;
     }
+    this.disconnectTodayResizeObserver();
   }
 
   /**

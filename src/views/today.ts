@@ -38,6 +38,24 @@ export function renderTodayView(container: HTMLElement, plugin: HabitTrackerPlug
 
   const cardsContainer = todaySection.createEl('div', { cls: 'today-cards-container habit-draggable' });
 
+  // Apply compact-mode class based on actual container width (not viewport)
+  const COMPACT_WIDTH_THRESHOLD = 500;
+  const applyCompactMode = () => {
+    const width = cardsContainer.getBoundingClientRect().width;
+    todaySection.classList.toggle('compact-mode', width <= COMPACT_WIDTH_THRESHOLD);
+  };
+  let resizeObserver: ResizeObserver | null = null;
+  if (typeof ResizeObserver !== 'undefined') {
+    resizeObserver = new ResizeObserver(() => {
+      applyCompactMode();
+    });
+    resizeObserver.observe(cardsContainer);
+    (cardsContainer as HTMLElement & { __compactObserver?: ResizeObserver }).__compactObserver = resizeObserver;
+  }
+
+  // Initial check
+  applyCompactMode();
+
   // Cache drag items list to avoid DOM queries on every dragover event
   let cachedItems: HTMLElement[] = [];
 
