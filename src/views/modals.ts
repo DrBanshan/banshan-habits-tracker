@@ -64,17 +64,14 @@ export class AddHabitModal extends Modal {
     // Color picker with label
     let currentColor = color;
     const colorSetting = new Setting(contentEl).setName('Color:');
-    let colorPickerRef: ColorComponent | undefined;
-    colorSetting.addColorPicker((cb: ColorComponent) => {
+    const _cpRef = colorSetting.addColorPicker(cb => {
       cb.setValue(currentColor);
-      colorPickerRef = cb;
+      return cb;
+    }) as unknown as ColorComponent;
+    _cpRef.onChange((value) => {
+      currentColor = value;
+      color = value;
     });
-    if (colorPickerRef) {
-      colorPickerRef.onChange((value) => {
-        currentColor = value;
-        color = value;
-      });
-    }
 
     new Setting(contentEl)
       .setName('Frequency')
@@ -165,17 +162,14 @@ export class EditHabitModal extends Modal {
     // Color picker with label
     let currentColor = color;
     const colorSetting2 = new Setting(contentEl).setName('Color:');
-    let colorPickerRef2: ColorComponent | undefined;
-    colorSetting2.addColorPicker((cb: ColorComponent) => {
+    const _cpRef2 = colorSetting2.addColorPicker(cb => {
       cb.setValue(currentColor);
-      colorPickerRef2 = cb;
+      return cb;
+    }) as unknown as ColorComponent;
+    _cpRef2.onChange((value) => {
+      currentColor = value;
+      color = value;
     });
-    if (colorPickerRef2) {
-      colorPickerRef2.onChange((value) => {
-        currentColor = value;
-        color = value;
-      });
-    }
 
     new Setting(contentEl)
       .setName('Frequency')
