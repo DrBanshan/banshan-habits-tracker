@@ -187,9 +187,9 @@ export class HabitTrackerView extends ItemView {
 
       // Update the check button only if toggling today's date
       if (date === todayStr) {
-        // Update inline check button in .today-card-middle
-        const middleSection = card.querySelector('.today-card-middle');
-        const inlineCheckBtnEl = middleSection?.querySelector<HTMLElement>('[data-date="' + date + '"]');
+        // Update inline check button in .today-card-row1
+        const row1 = card.querySelector('.today-card-row1');
+        const inlineCheckBtnEl = row1?.querySelector<HTMLElement>('[data-date="' + date + '"]');
         if (inlineCheckBtnEl) {
           const markEl = inlineCheckBtnEl.querySelector('.today-check-mark');
           if (markEl) markEl.textContent = isCompleted ? '✓' : '';
@@ -209,19 +209,6 @@ export class HabitTrackerView extends ItemView {
             inlineCheckBtnEl.style.removeProperty('--habit-btn-bg');
             inlineCheckBtnEl.style.removeProperty('--habit-btn-shadow');
             inlineCheckBtnEl.style.removeProperty('--habit-btn-border');
-          }
-        }
-
-        // Update the check button in .today-card-right
-        const rightSection = card.querySelector('.today-card-right');
-        const checkBtnEl = rightSection?.querySelector<HTMLElement>('[data-date="' + date + '"]');
-        if (checkBtnEl) {
-          const markEl = checkBtnEl.querySelector('.today-check-mark');
-          if (markEl) markEl.textContent = isCompleted ? '✓' : '';
-          if (isCompleted) {
-            checkBtnEl.addClass('active');
-          } else {
-            checkBtnEl.removeClass('active');
           }
         }
       }
@@ -247,7 +234,7 @@ export class HabitTrackerView extends ItemView {
       if (countNumEl) countNumEl.textContent = String(weekCount);
       const countLabelEl = card.querySelector('.today-count-label');
       if (countLabelEl) countLabelEl.textContent = weekCount === 1 ? 'DAY' : 'DAYS';
-      const weekCountEl = card.querySelector('.today-week-count');
+      const weekCountEl = card.querySelector('.today-week-count-inline');
       if (weekCountEl) weekCountEl.textContent = `${weekCount}/${numDays}`;
     });
   }

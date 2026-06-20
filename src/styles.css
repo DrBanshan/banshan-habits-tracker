@@ -507,7 +507,6 @@
   flex-direction: column;
   align-items: center;
   min-width: 50px;
-  margin-right: 12px;
 }
 
 .today-count-number {
@@ -613,12 +612,65 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   flex-shrink: 0;
+  margin-left: 6px;
 }
 
 .today-week-count-inline {
-  font-size: 12px;
-  color: var(--text-muted);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-normal);
   flex-shrink: 0;
+}
+
+/* Compact mode: stack card into 3 rows when window <= 900px */
+@media (max-width: 900px) {
+  .today-card {
+    display: grid;
+    grid-template-columns: auto auto 1fr;
+    grid-template-rows: auto auto auto;
+    gap: 6px 8px;
+    align-items: center;
+  }
+
+  /* Row 1: streak count, toggle, habit name — left-aligned group */
+  .today-card > .today-card-left {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .today-card > .today-check-button-inline {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .today-card > .today-habit-name {
+    grid-column: 3;
+    grid-row: 1;
+    min-width: 0;
+    max-width: none;
+    overflow: visible;
+    text-overflow: clip;
+    margin-left: 0;
+  }
+
+  /* Row 2: day blocks — centered */
+  .today-card > .today-blocks-container {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    flex: none;
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Row 3: total count — right-aligned */
+  .today-card > .today-week-count-inline {
+    grid-column: 3;
+    grid-row: 3;
+    justify-self: end;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-normal);
+  }
 }
 
 .today-week-row[data-days="21"] .today-week-square {

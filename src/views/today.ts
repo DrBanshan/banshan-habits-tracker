@@ -52,22 +52,21 @@ export function renderTodayView(container: HTMLElement, plugin: HabitTrackerPlug
     card.setAttribute('data-habit-index', String(idx));
     const isTodayCompleted = isHabitCompleted(plugin, habit.name, todayStr);
 
+    // Column 1: streak day count
     const left = card.createEl('div', { cls: 'today-card-left' });
     left.createEl('div', { text: String(weekCount), cls: 'today-count-number' });
     left.createEl('div', { text: weekCount === 1 ? 'DAY' : 'DAYS', cls: 'today-count-label' });
 
-    const middle = card.createEl('div', { cls: 'today-card-middle' });
-
-    // Column 2: today's toggle
-    const checkBtn = middle.createEl('button', { cls: 'today-check-button-inline' });
+    // Column 2: today toggle
+    const checkBtn = card.createEl('button', { cls: 'today-check-button-inline' });
     checkBtn.createEl('span', { text: isTodayCompleted ? '✓' : '', cls: 'today-check-mark' });
     if (isTodayCompleted) checkBtn.addClass('active');
 
     // Column 3: habit name
-    middle.createEl('div', { text: habit.name, cls: 'today-habit-name' });
+    const habitNameEl = card.createEl('div', { text: habit.name, cls: 'today-habit-name' });
 
-    // Column 4: day blocks — each week on its own row
-    const blocksContainer = middle.createEl('div', { cls: 'today-blocks-container' });
+    // Column 4: day blocks
+    const blocksContainer = card.createEl('div', { cls: 'today-blocks-container' });
     for (let w = 0; w < numDays; w += 7) {
       const weekRow = blocksContainer.createEl('div', { cls: 'today-week-row' });
       for (let i = w; i < Math.min(w + 7, numDays); i++) {
@@ -105,7 +104,6 @@ export function renderTodayView(container: HTMLElement, plugin: HabitTrackerPlug
           // Update visual state immediately without full re-render
           const newState = !wasCompleted;
           if (isSameDay(d, today)) {
-            // Today square gets special outline + color treatment
             sq.classList.toggle('completed', newState);
             if (newState) {
               sq.style.setProperty('--habit-color', habit.color);
@@ -116,7 +114,6 @@ export function renderTodayView(container: HTMLElement, plugin: HabitTrackerPlug
               sq.style.setProperty('--habit-outline', `2px solid ${hexToRgba(habit.color, 0.18)}`);
             }
           } else {
-            // Non-today completed squares get solid color
             sq.classList.toggle('completed', newState);
             if (newState) {
               sq.style.setProperty('--habit-color', habit.color);
@@ -131,11 +128,8 @@ export function renderTodayView(container: HTMLElement, plugin: HabitTrackerPlug
       }
     }
 
-    // Column 5: day count
-    middle.createEl('div', { text: `${weekCount}/${numDays}`, cls: 'today-week-count-inline' });
-
-    const right = card.createEl('div', { cls: 'today-card-right' });
-    void right; // used for drag layout structure
+    // Column 5: total day count
+    const weekCountEl = card.createEl('div', { text: `${weekCount}/${numDays}`, cls: 'today-week-count-inline' });
 
     if (isTodayCompleted) {
       card.addClass('active-today');
