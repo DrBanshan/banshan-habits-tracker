@@ -1,4 +1,4 @@
-import { App, Modal, Setting } from 'obsidian';
+import { App, ColorComponent, Modal, Setting } from 'obsidian';
 import type { TextComponent } from 'obsidian';
 import type HabitTrackerPlugin from '../main';
 import { DEFAULT_COLORS } from '../types';
@@ -64,11 +64,8 @@ export class AddHabitModal extends Modal {
     // Color picker with label
     let currentColor = color;
     const colorSetting = new Setting(contentEl).setName('Color:');
-    let colorPicker: ColorComponent | null = null;
-    colorSetting.addColorPicker(cb => {
-      cb.setValue(currentColor);
-      colorPicker = cb;
-    });
+    colorSetting.addColorPicker(cb => cb.setValue(currentColor));
+    const colorPicker = colorSetting.components.find(c => c instanceof ColorComponent) as ColorComponent | undefined;
     if (colorPicker) {
       colorPicker.onChange((value) => {
         currentColor = value;
@@ -165,11 +162,8 @@ export class EditHabitModal extends Modal {
     // Color picker with label
     let currentColor = color;
     const colorSetting2 = new Setting(contentEl).setName('Color:');
-    let colorPicker2: ColorComponent | null = null;
-    colorSetting2.addColorPicker(cb => {
-      cb.setValue(currentColor);
-      colorPicker2 = cb;
-    });
+    colorSetting2.addColorPicker(cb => cb.setValue(currentColor));
+    const colorPicker2 = colorSetting2.components.find(c => c instanceof ColorComponent) as ColorComponent | undefined;
     if (colorPicker2) {
       colorPicker2.onChange((value) => {
         currentColor = value;
