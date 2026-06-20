@@ -28,7 +28,7 @@ export class AddHabitModal extends Modal {
     let textInput: TextComponent | undefined;
 
     const emojiContainer = contentEl.createDiv({ cls: 'habit-icon-picker' });
-    const EMOJI_OPTIONS = ['🏃', '📖', '💧', '🧘', '💪', '🥗', '😴', '✍️', '🎵', '💊', '🌅', '🚶', '🏋️', '📝', '🧹'];
+    const EMOJI_OPTIONS = ['🏃', '📖', '💧', '🧘', '💪', '🥗', '😴', '✍️', '🎵', '💊', '🌅', '🚶', '📝', '🧹', '🎯', '🌱', '🧠', '💤', '🚿', '🍳', '🐕', '👨‍👩‍👧‍👦', '🏡', '🌿'];
     EMOJI_OPTIONS.forEach(emoji => {
       const btn = emojiContainer.createEl('button', { cls: 'emoji-option', text: emoji });
       btn.addEventListener('click', () => {
@@ -139,7 +139,7 @@ export class EditHabitModal extends Modal {
     let textInput: TextComponent | undefined;
 
     const emojiContainer = contentEl.createDiv({ cls: 'habit-icon-picker' });
-    const EMOJI_OPTIONS = ['🏃', '📖', '💧', '🧘', '💪', '🥗', '😴', '✍️', '🎵', '💊', '🌅', '🚶', '🏋️', '📝', '🧹'];
+    const EMOJI_OPTIONS = ['🏃', '📖', '💧', '🧘', '💪', '🥗', '😴', '✍️', '🎵', '💊', '🌅', '🚶', '📝', '🧹', '🎯', '🌱', '🧠', '💤', '🚿', '🍳', '🐕', '👨‍👩‍👧‍👦', '🏡', '🌿'];
     EMOJI_OPTIONS.forEach(emoji => {
       const btn = emojiContainer.createEl('button', { cls: 'emoji-option', text: emoji });
       btn.addEventListener('click', () => {
