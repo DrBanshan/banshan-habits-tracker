@@ -75,18 +75,18 @@
 }
 
 .habit-settings-button {
-  position: absolute;
-  top: 6px;
-  right: 8px;
-  width: 24px;
-  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
   padding: 0;
   background: transparent;
   border: none;
   color: var(--text-normal);
   cursor: pointer;
-  border-radius: 0;
-  display: inline-flex;
+  border-radius: 4px;
+  flex-shrink: 0;
   align-items: center;
   justify-content: center;
   z-index: 1400;
