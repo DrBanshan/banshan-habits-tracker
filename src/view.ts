@@ -204,9 +204,7 @@ export class HabitTrackerView extends ItemView {
 
       // Update the check button only if toggling today's date
       if (date === todayStr) {
-        // Update inline check button in .today-card-row1
-        const row1 = card.querySelector('.today-card-row1');
-        const inlineCheckBtnEl = row1?.querySelector<HTMLElement>('[data-date="' + date + '"]');
+        const inlineCheckBtnEl = card.querySelector<HTMLElement>('.today-check-button-inline');
         if (inlineCheckBtnEl) {
           const markEl = inlineCheckBtnEl.querySelector('.today-check-mark');
           if (markEl) markEl.textContent = isCompleted ? '✓' : '';
