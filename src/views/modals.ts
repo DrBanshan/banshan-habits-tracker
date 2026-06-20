@@ -64,11 +64,13 @@ export class AddHabitModal extends Modal {
     // Color picker with label
     let currentColor = color;
     const colorSetting = new Setting(contentEl).setName('Color:');
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let _cpRef: any;
-    colorSetting.addColorPicker((cb: ColorComponent) => { _cpRef = cb; cb.setValue(currentColor); });
-    if (_cpRef) {
-      _cpRef.onChange((value: string) => {
+    let _cpRef: ColorComponent | undefined;
+    colorSetting.addColorPicker((cb) => {
+      _cpRef = cb;
+      cb.setValue(currentColor);
+    });
+    if (_cpRef !== undefined && typeof _cpRef.onChange === 'function') {
+      _cpRef.onChange((value) => {
         currentColor = value;
         color = value;
       });
@@ -161,11 +163,13 @@ export class EditHabitModal extends Modal {
     // Color picker with label
     let currentColor = color;
     const colorSetting2 = new Setting(contentEl).setName('Color:');
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let _cpRef2: any;
-    colorSetting2.addColorPicker((cb: ColorComponent) => { _cpRef2 = cb; cb.setValue(currentColor); });
-    if (_cpRef2) {
-      _cpRef2.onChange((value: string) => {
+    let _cpRef2: ColorComponent | undefined;
+    colorSetting2.addColorPicker((cb) => {
+      _cpRef2 = cb;
+      cb.setValue(currentColor);
+    });
+    if (_cpRef2 !== undefined && typeof _cpRef2.onChange === 'function') {
+      _cpRef2.onChange((value) => {
         currentColor = value;
         color = value;
       });
