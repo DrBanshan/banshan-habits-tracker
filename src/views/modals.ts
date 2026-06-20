@@ -65,7 +65,7 @@ export class AddHabitModal extends Modal {
     let currentColor = color;
     const colorSetting = new Setting(contentEl).setName('Color:');
     let colorPickerRef: ColorComponent | undefined;
-    colorSetting.addColorPicker(cb => {
+    colorSetting.addColorPicker((cb: ColorComponent) => {
       cb.setValue(currentColor);
       colorPickerRef = cb;
     });
@@ -166,7 +166,7 @@ export class EditHabitModal extends Modal {
     let currentColor = color;
     const colorSetting2 = new Setting(contentEl).setName('Color:');
     let colorPickerRef2: ColorComponent | undefined;
-    colorSetting2.addColorPicker(cb => {
+    colorSetting2.addColorPicker((cb: ColorComponent) => {
       cb.setValue(currentColor);
       colorPickerRef2 = cb;
     });
