@@ -793,6 +793,9 @@
 /* GitHub-style Year View */
 .github-style {
   margin-bottom: 16px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  padding: 12px;
 }
 
 .github-header {
