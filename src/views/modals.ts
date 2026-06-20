@@ -64,14 +64,14 @@ export class AddHabitModal extends Modal {
     // Color picker with label
     let currentColor = color;
     const colorSetting = new Setting(contentEl).setName('Color:');
-    const _cpRef = colorSetting.addColorPicker(cb => {
-      cb.setValue(currentColor);
-      return cb;
-    }) as unknown as ColorComponent;
-    _cpRef.onChange((value) => {
-      currentColor = value;
-      color = value;
-    });
+    let _cpRef: ColorComponent | undefined;
+    colorSetting.addColorPicker(cb => { _cpRef = cb; cb.setValue(currentColor); });
+    if (_cpRef) {
+      _cpRef.onChange((value) => {
+        currentColor = value;
+        color = value;
+      });
+    }
 
     new Setting(contentEl)
       .setName('Frequency')
@@ -84,11 +84,9 @@ export class AddHabitModal extends Modal {
       .setName('Streak Mode')
       .addDropdown(dd => dd.addOptions({ strict: 'Strict', forgiving: 'Forgiving' }).setValue('strict').onChange(v => streakMode = v as StreakMode));
 
-    const btnRow = contentEl.createDiv({ cls: 'modal-button-row' });
-    const addBtn = btnRow.createEl('button', { text: 'Add', cls: 'modal-btn modal-btn-cta' });
-    addBtn.addEventListener('click', () => this.submit(name, icon, color, frequency, streakMode, specificDays));
-    const cancelBtn = btnRow.createEl('button', { text: 'Cancel', cls: 'modal-btn' });
-    cancelBtn.addEventListener('click', () => this.close());
+    new Setting(contentEl)
+      .addButton(btn => btn.setButtonText('Add').setCta().onClick(() => this.submit(name, icon, color, frequency, streakMode, specificDays)))
+      .addButton(btn => btn.setButtonText('Cancel').onClick(() => this.close()));
   }
 
   submit(name: string, icon: string, color: string, frequency: Frequency, streakMode: StreakMode, specificDays: string[]) {
@@ -162,14 +160,14 @@ export class EditHabitModal extends Modal {
     // Color picker with label
     let currentColor = color;
     const colorSetting2 = new Setting(contentEl).setName('Color:');
-    const _cpRef2 = colorSetting2.addColorPicker(cb => {
-      cb.setValue(currentColor);
-      return cb;
-    }) as unknown as ColorComponent;
-    _cpRef2.onChange((value) => {
-      currentColor = value;
-      color = value;
-    });
+    let _cpRef2: ColorComponent | undefined;
+    colorSetting2.addColorPicker(cb => { _cpRef2 = cb; cb.setValue(currentColor); });
+    if (_cpRef2) {
+      _cpRef2.onChange((value) => {
+        currentColor = value;
+        color = value;
+      });
+    }
 
     new Setting(contentEl)
       .setName('Frequency')
@@ -189,20 +187,18 @@ export class EditHabitModal extends Modal {
       .setName('Streak Mode')
       .addDropdown(dd => dd.addOptions({ strict: 'Strict', forgiving: 'Forgiving' }).setValue(streakMode).onChange(v => streakMode = v as StreakMode));
 
-    const btnRow2 = contentEl.createDiv({ cls: 'modal-button-row' });
-    const saveBtn = btnRow2.createEl('button', { text: 'Save', cls: 'modal-btn modal-btn-cta' });
-    saveBtn.addEventListener('click', () => {
-      if (name.trim() && name !== this.habitName) {
-        this.plugin.renameHabit(this.habitName, name.trim());
-      }
-      if (name.trim() && name === this.habitName) {
-        this.plugin.updateHabitDetails(name.trim(), icon, color, frequency, streakMode, specificDays);
-      }
-      this.close();
-      void this.onSubmit();
-    });
-    const cancelBtn2 = btnRow2.createEl('button', { text: 'Cancel', cls: 'modal-btn' });
-    cancelBtn2.addEventListener('click', () => this.close());
+    new Setting(contentEl)
+      .addButton(btn => btn.setButtonText('Save').setCta().onClick(() => {
+        if (name.trim() && name !== this.habitName) {
+          this.plugin.renameHabit(this.habitName, name.trim());
+        }
+        if (name.trim() && name === this.habitName) {
+          this.plugin.updateHabitDetails(name.trim(), icon, color, frequency, streakMode, specificDays);
+        }
+        this.close();
+        void this.onSubmit();
+      }))
+      .addButton(btn => btn.setButtonText('Cancel').onClick(() => this.close()));
   }
 
   onFrequencyChange: () => void = () => {};
