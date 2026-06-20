@@ -1,4 +1,4 @@
-import { App, ColorComponent, Modal, Setting } from 'obsidian';
+import { App, Modal, Setting } from 'obsidian';
 import type { TextComponent } from 'obsidian';
 import type HabitTrackerPlugin from '../main';
 import { DEFAULT_COLORS } from '../types';
@@ -61,27 +61,20 @@ export class AddHabitModal extends Modal {
       });
     textSetting.settingEl.addClass('habit-text-setting');
 
-    const colorContainer = contentEl.createDiv({ cls: 'habit-color-picker' });
+    // Color picker with label
     let currentColor = color;
-    DEFAULT_COLORS.forEach(c => {
-      const swatch = colorContainer.createEl('button', { cls: `color-swatch ${c === color ? 'selected' : ''}` });
-      swatch.style.backgroundColor = c;
-      swatch.addEventListener('click', () => { currentColor = c; color = c; colorContainer.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected')); swatch.classList.add('selected'); });
+    const colorSetting = new Setting(contentEl).setName('Color:');
+    let colorPicker: ColorComponent | null = null;
+    colorSetting.addColorPicker(cb => {
+      cb.setValue(currentColor);
+      colorPicker = cb;
     });
-
-    // Inline custom color picker at the end of the color list
-    const colorPickerRow = contentEl.createDiv({ cls: 'habit-color-picker habit-color-picker-row' });
-    colorPickerRow.prepend(colorContainer);
-    colorPickerRow.createEl('span', { text: 'Custom color:', cls: 'color-picker-label' });
-
-    const cpContainer = colorPickerRow.createDiv();
-    const colorPicker = new ColorComponent(cpContainer);
-    colorPicker.setValue(currentColor);
-    colorPicker.onChange((value) => {
-      currentColor = value;
-      color = value;
-      colorContainer.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected'));
-    });
+    if (colorPicker) {
+      colorPicker.onChange((value) => {
+        currentColor = value;
+        color = value;
+      });
+    }
 
     new Setting(contentEl)
       .setName('Frequency')
@@ -94,9 +87,11 @@ export class AddHabitModal extends Modal {
       .setName('Streak Mode')
       .addDropdown(dd => dd.addOptions({ strict: 'Strict', forgiving: 'Forgiving' }).setValue('strict').onChange(v => streakMode = v as StreakMode));
 
-    new Setting(contentEl)
-      .addButton(btn => btn.setButtonText('Add').setCta().onClick(() => this.submit(name, icon, color, frequency, streakMode, specificDays)))
-      .addButton(btn => btn.setButtonText('Cancel').onClick(() => this.close()));
+    const btnRow = contentEl.createDiv({ cls: 'modal-button-row' });
+    const addBtn = btnRow.createEl('button', { text: 'Add', cls: 'modal-btn modal-btn-cta' });
+    addBtn.addEventListener('click', () => this.submit(name, icon, color, frequency, streakMode, specificDays));
+    const cancelBtn = btnRow.createEl('button', { text: 'Cancel', cls: 'modal-btn' });
+    cancelBtn.addEventListener('click', () => this.close());
   }
 
   submit(name: string, icon: string, color: string, frequency: Frequency, streakMode: StreakMode, specificDays: string[]) {
@@ -167,27 +162,20 @@ export class EditHabitModal extends Modal {
       });
     textSetting.settingEl.addClass('habit-text-setting');
 
-    const colorContainer = contentEl.createDiv({ cls: 'habit-color-picker' });
+    // Color picker with label
     let currentColor = color;
-    DEFAULT_COLORS.forEach(c => {
-      const swatch = colorContainer.createEl('button', { cls: `color-swatch ${c === color ? 'selected' : ''}` });
-      swatch.style.backgroundColor = c;
-      swatch.addEventListener('click', () => { currentColor = c; color = c; colorContainer.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected')); swatch.classList.add('selected'); });
+    const colorSetting2 = new Setting(contentEl).setName('Color:');
+    let colorPicker2: ColorComponent | null = null;
+    colorSetting2.addColorPicker(cb => {
+      cb.setValue(currentColor);
+      colorPicker2 = cb;
     });
-
-    // Inline custom color picker at the end of the color list
-    const colorPickerRow = contentEl.createDiv({ cls: 'habit-color-picker habit-color-picker-row' });
-    colorPickerRow.prepend(colorContainer);
-    colorPickerRow.createEl('span', { text: 'Custom color:', cls: 'color-picker-label' });
-
-    const cpContainer = colorPickerRow.createDiv();
-    const colorPicker = new ColorComponent(cpContainer);
-    colorPicker.setValue(currentColor);
-    colorPicker.onChange((value) => {
-      currentColor = value;
-      color = value;
-      colorContainer.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected'));
-    });
+    if (colorPicker2) {
+      colorPicker2.onChange((value) => {
+        currentColor = value;
+        color = value;
+      });
+    }
 
     new Setting(contentEl)
       .setName('Frequency')
@@ -207,18 +195,20 @@ export class EditHabitModal extends Modal {
       .setName('Streak Mode')
       .addDropdown(dd => dd.addOptions({ strict: 'Strict', forgiving: 'Forgiving' }).setValue(streakMode).onChange(v => streakMode = v as StreakMode));
 
-    new Setting(contentEl)
-      .addButton(btn => btn.setButtonText('Save').setCta().onClick(() => {
-        if (name.trim() && name !== this.habitName) {
-          this.plugin.renameHabit(this.habitName, name.trim());
-        }
-        if (name.trim() && name === this.habitName) {
-          this.plugin.updateHabitDetails(name.trim(), icon, color, frequency, streakMode, specificDays);
-        }
-        this.close();
-        void this.onSubmit();
-      }))
-      .addButton(btn => btn.setButtonText('Cancel').onClick(() => this.close()));
+    const btnRow2 = contentEl.createDiv({ cls: 'modal-button-row' });
+    const saveBtn = btnRow2.createEl('button', { text: 'Save', cls: 'modal-btn modal-btn-cta' });
+    saveBtn.addEventListener('click', () => {
+      if (name.trim() && name !== this.habitName) {
+        this.plugin.renameHabit(this.habitName, name.trim());
+      }
+      if (name.trim() && name === this.habitName) {
+        this.plugin.updateHabitDetails(name.trim(), icon, color, frequency, streakMode, specificDays);
+      }
+      this.close();
+      void this.onSubmit();
+    });
+    const cancelBtn2 = btnRow2.createEl('button', { text: 'Cancel', cls: 'modal-btn' });
+    cancelBtn2.addEventListener('click', () => this.close());
   }
 
   onFrequencyChange: () => void = () => {};
