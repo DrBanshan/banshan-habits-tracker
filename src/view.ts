@@ -15,6 +15,8 @@ export const VIEW_TYPE_HABIT_TRACKER = 'banshan-habit-tracker-view';
 export class HabitTrackerView extends ItemView {
   plugin: HabitTrackerPlugin;
   private unsubscribeStore: (() => void) | null = null;
+  private controlsPanel: HTMLElement | null = null;
+  private viewPanel: HTMLElement | null = null;
 
   // Obsidian passes WorkspaceLeaf but the type isn't exported in a usable way here
   constructor(leaf: { view: unknown }, plugin: HabitTrackerPlugin) {
@@ -27,6 +29,11 @@ export class HabitTrackerView extends ItemView {
   getIcon(): string { return 'calendar-check'; }
 
   async onOpen(): Promise<void> {
+    const contentEl = this.containerEl.children[1] as HTMLElement;
+    contentEl.empty();
+    // Create two persistent sections that don't get destroyed on re-render
+    this.controlsPanel = contentEl.createEl('div', { cls: 'habit-controls-panel' });
+    this.viewPanel = contentEl.createEl('div', { cls: 'habit-view-panel' });
     // Subscribe to store changes for automatic re-rendering
     this.unsubscribeStore = subscribe((payload) => {
       if (payload && payload.type === 'toggle' && payload.habitName && payload.date) {
@@ -328,8 +335,12 @@ export class HabitTrackerView extends ItemView {
     wrapped.empty();
     wrapped.addClass('habit-tracker-container');
 
-    const controlsEl = this.renderControls(wrapped);
-    const contentWrapper = wrapped.createEl('div', { cls: 'habit-content' });
+    // Create two persistent sections if they don't exist yet
+    this.controlsPanel = wrapped.createEl('div', { cls: 'habit-controls-panel' });
+    this.viewPanel = wrapped.createEl('div', { cls: 'habit-view-panel' });
+
+    const controlsEl = this.renderControls(this.controlsPanel);
+    const contentWrapper = this.viewPanel;
 
     const applyOffset = () => {
       try {
@@ -346,7 +357,7 @@ export class HabitTrackerView extends ItemView {
     const habits = state.habits;
 
     if (state.error) {
-      const errorEl = wrapped.createEl('div', { cls: 'no-habits-message' });
+      const errorEl = this.viewPanel.createEl('div', { cls: 'no-habits-message' });
       errorEl.createEl('div', { text: '⚠️ Error loading habits', cls: 'error-title' });
       errorEl.createEl('div', { text: state.error, cls: 'error-detail' });
       errorEl.createEl('button', {
@@ -370,7 +381,7 @@ export class HabitTrackerView extends ItemView {
     }
 
     if (habits.length === 0) {
-      wrapped.createEl('div', { text: 'No habits yet. Click "Add" to get started!', cls: 'no-habits-message' });
+      this.viewPanel.createEl('div', { text: 'No habits yet. Click "Add" to get started!', cls: 'no-habits-message' });
       return;
     }
 

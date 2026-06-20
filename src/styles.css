@@ -6,6 +6,11 @@
   min-height: 0;
   overflow: hidden;
   position: relative;
+  gap: 16px;
+}
+
+.habit-controls-panel {
+  flex-shrink: 0;
 }
 
 .habit-content {
