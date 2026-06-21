@@ -103,6 +103,7 @@ export function renderTodayView(container: HTMLElement, plugin: HabitTrackerPlug
         if (isSameDay(d, today)) {
           sq.addClass('today');
           if (completed) {
+            sq.addClass('completed');
             sq.style.setProperty('--habit-color', habit.color);
             sq.style.setProperty('--habit-shadow', `0 6px 14px ${hexToRgba(habit.color, 0.14)}`);
             sq.style.setProperty('--habit-outline', `2px solid ${hexToRgba(habit.color, 0.18)}`);
