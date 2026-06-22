@@ -1,5 +1,5 @@
 import type HabitTrackerPlugin from '../main';
-import type { AppState } from '../types';
+import type { AppState, CompletionStatus, Habit } from '../types';
 
 export function renderTodayView(container: HTMLElement, plugin: HabitTrackerPlugin, state: AppState): void {
   const habits = state.habits;
@@ -11,23 +11,53 @@ export function renderTodayView(container: HTMLElement, plugin: HabitTrackerPlug
   today.setHours(0, 0, 0, 0);
 
   const numDays = plugin.settings?.todayViewDays ?? 7;
-  const dayOfWeek = (today.getDay() + 6) % 7;
-  const monday = new Date(today);
-  monday.setDate(today.getDate() - dayOfWeek);
 
+  // When in 21-day mode, scan completions to determine which weeks to show
   const weekDates: Date[] = [];
-  for (let i = 0; i < numDays; i++) {
-    const d = new Date(monday);
-    d.setDate(monday.getDate() + i);
-    weekDates.push(d);
+  if (numDays === 21) {
+    const dayOfWeek = (today.getDay() + 6) % 7; // Monday = 0
+    const todayMonday = new Date(today);
+    todayMonday.setDate(today.getDate() - dayOfWeek);
+
+    // Check completions for each habit to find the best week window
+    let bestStart: Date | null = null;
+    const completions = state.completions;
+    for (const habit of habits) {
+      const window = scanWeekWindow(habit, todayMonday, completions);
+      if (!bestStart || window < bestStart) {
+        bestStart = window;
+      }
+    }
+    // Default to current week if no completions found
+    const start = bestStart ?? todayMonday;
+    for (let i = 0; i < numDays; i++) {
+      const d = new Date(start);
+      d.setDate(start.getDate() + i);
+      weekDates.push(d);
+    }
+  } else {
+    // Standard mode: always start from Monday of current week
+    const dayOfWeek = (today.getDay() + 6) % 7;
+    const monday = new Date(today);
+    monday.setDate(today.getDate() - dayOfWeek);
+    for (let i = 0; i < numDays; i++) {
+      const d = new Date(monday);
+      d.setDate(monday.getDate() + i);
+      weekDates.push(d);
+    }
   }
 
   const todayStr = formatDate(today);
 
+  // Calculate offset of weekDates[0] relative to today's Monday
+  const firstMonday = new Date(today);
+  firstMonday.setDate(today.getDate() - ((today.getDay() + 6) % 7));
+  const weekOffset = Math.round((weekDates[0].getTime() - firstMonday.getTime()) / (1000 * 60 * 60 * 24));
+
   // Generate day labels cycling through the week
-  const getDayLabel = (offset: number) => {
+  const getDayLabel = (index: number) => {
     const days = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
-    return days[(offset % 7 + 7) % 7];
+    return days[((index + weekOffset) % 7 + 7) % 7];
   };
 
   const todaySection = container.createEl('div', { cls: 'today-overview' });
@@ -85,6 +115,7 @@ export function renderTodayView(container: HTMLElement, plugin: HabitTrackerPlug
 
     // Column 4: day blocks
     const blocksContainer = card.createEl('div', { cls: 'today-blocks-container' });
+    blocksContainer.setAttribute('data-days', String(numDays));
     for (let w = 0; w < numDays; w += 7) {
       const weekRow = blocksContainer.createEl('div', { cls: 'today-week-row' });
       for (let i = w; i < Math.min(w + 7, numDays); i++) {
@@ -318,4 +349,55 @@ function getContrastColor(hex: string): string {
 
 function isSameDay(date1: Date, date2: Date): boolean {
   return date1.getFullYear() === date2.getFullYear() && date1.getMonth() === date2.getMonth() && date1.getDate() === date2.getDate();
+}
+
+/**
+ * Scan a habit's completions to determine the best 3-week window.
+ * Returns the Monday of the starting week.
+ *
+ * Rules (scanning from oldest to newest):
+ * 1. If completions exist in both prev-2-weeks and prev-1-weeks → show those + current
+ * 2. If completions exist in prev-1-weeks but not prev-2-weeks → show prev + current + next
+ * 3. If no completions in prev-2 or prev-1 weeks → show current + next + next+1
+ */
+function scanWeekWindow(habit: Habit, todayMonday: Date, completions: Record<string, Record<string, CompletionStatus>>): Date {
+  const habitCompletions = completions[habit.name] || {};
+
+  // Helper: get all dates in a given week (Monday-based)
+  const weekDatesInRange = (startMonday: Date): string[] => {
+    const dates: string[] = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(startMonday);
+      d.setDate(startMonday.getDate() + i);
+      dates.push(formatDate(d));
+    }
+    return dates;
+  };
+
+  // Helper: check if any date in a week has completions
+  const hasCompletionsInWeek = (startMonday: Date): boolean => {
+    return weekDatesInRange(startMonday).some(d => habitCompletions[d] === 'completed');
+  };
+
+  // Check prev-2 weeks (relative to today's Monday)
+  const prev2Mon = new Date(todayMonday);
+  prev2Mon.setDate(todayMonday.getDate() - 14);
+  const prev1Mon = new Date(todayMonday);
+  prev1Mon.setDate(todayMonday.getDate() - 7);
+
+  const hasInPrev2 = hasCompletionsInWeek(prev2Mon);
+  const hasInPrev1 = hasCompletionsInWeek(prev1Mon);
+
+  if (hasInPrev2 && hasInPrev1) {
+    // Rule 1: show prev-2, prev-1, current
+    return prev2Mon;
+  } else if (!hasInPrev2 && hasInPrev1) {
+    // Rule 2: show prev-1, current, next
+    return prev1Mon;
+  } else {
+    // Rule 3: no completions in past → show current, next, next+1
+    const nextNextMon = new Date(todayMonday);
+    nextNextMon.setDate(todayMonday.getDate() + 14);
+    return todayMonday;
+  }
 }
