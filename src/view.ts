@@ -8,6 +8,7 @@ import { renderYearView } from './views/year';
 import { renderYearOverview } from './views/yearOverview';
 import { AddHabitModal, EditHabitModal, DeleteHabitModal } from './views/modals';
 import { subscribe } from './store';
+import { calculateStreak } from './streak';
 import type { ViewType } from './types';
 
 export const VIEW_TYPE_HABIT_TRACKER = 'banshan-habit-tracker-view';
@@ -228,7 +229,7 @@ export class HabitTrackerView extends ItemView {
         }
       }
 
-      // Update the week count by recalculating from the state
+      // Update the streak count and window day count
       const freshState = this.plugin.getState();
       const habitCompletions = freshState.completions[habitName] || {};
       let weekCount = 0;
@@ -244,11 +245,18 @@ export class HabitTrackerView extends ItemView {
         const dStr = this.formatDate(d);
         if (habitCompletions[dStr] === 'completed') weekCount++;
       }
-      // Update both the count number and the /N label
+      // Calculate streak for the count number
+      const habitForStreak = freshState.habits.find(h => h.name === habitName);
+      let streakCount = 0;
+      if (habitForStreak) {
+        const streakInfo = calculateStreak(habitForStreak, freshState.completions);
+        streakCount = streakInfo.current;
+      }
+      // Update the count number with streak, and the /N label with window count
       const countNumEl = card.querySelector('.today-count-number');
-      if (countNumEl) countNumEl.textContent = String(weekCount);
+      if (countNumEl) countNumEl.textContent = String(streakCount);
       const countLabelEl = card.querySelector('.today-count-label');
-      if (countLabelEl) countLabelEl.textContent = weekCount === 1 ? 'DAY' : 'DAYS';
+      if (countLabelEl) countLabelEl.textContent = streakCount === 1 ? 'DAY' : 'DAYS';
       const weekCountEl = card.querySelector('.today-week-count-inline');
       if (weekCountEl) weekCountEl.textContent = `${weekCount}/${numDays}`;
     });

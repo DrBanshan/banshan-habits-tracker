@@ -1,5 +1,6 @@
 import type HabitTrackerPlugin from '../main';
 import type { AppState, CompletionStatus, Habit } from '../types';
+import { calculateStreak } from '../streak';
 
 export function renderTodayView(container: HTMLElement, plugin: HabitTrackerPlugin, state: AppState): void {
   const habits = state.habits;
@@ -107,6 +108,10 @@ export function renderTodayView(container: HTMLElement, plugin: HabitTrackerPlug
       if (isHabitCompleted(plugin, habit.name, formatDate(d))) weekCount++;
     });
 
+    // Calculate current streak for the count number
+    const streakInfo = calculateStreak(habit, plugin.getState().completions);
+    const currentStreak = streakInfo.current;
+
     const card = cardsContainer.createEl('div', { cls: 'today-card habit-section habit-drag-item' });
     card.setAttribute('draggable', 'true');
     card.setAttribute('data-habit-index', String(idx));
@@ -114,8 +119,8 @@ export function renderTodayView(container: HTMLElement, plugin: HabitTrackerPlug
 
     // Column 1: streak day count
     const left = card.createEl('div', { cls: 'today-card-left' });
-    left.createEl('div', { text: String(weekCount), cls: 'today-count-number' });
-    left.createEl('div', { text: weekCount === 1 ? 'DAY' : 'DAYS', cls: 'today-count-label' });
+    left.createEl('div', { text: String(currentStreak), cls: 'today-count-number' });
+    left.createEl('div', { text: currentStreak === 1 ? 'DAY' : 'DAYS', cls: 'today-count-label' });
 
     // Column 2: today toggle
     const checkBtn = card.createEl('button', { cls: 'today-check-button-inline' });
