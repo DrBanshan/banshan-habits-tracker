@@ -1,7 +1,7 @@
 export type Frequency = 'daily' | 'weekly' | 'specific';
 export type StreakMode = 'strict' | 'forgiving';
 export type CompletionStatus = 'completed' | 'missed' | 'unmarked';
-export type ViewType = 'today' | 'month' | 'year' | 'yearOverview';
+export type ViewType = 'dashboard' | 'today' | 'month' | 'year' | 'yearOverview';
 
 export interface Habit {
   name: string;

@@ -17,6 +17,7 @@ An interactive habit tracking plugin for Obsidian with a Today view, monthly and
 - **Deleted Habit Data Handling** -- Choose to keep or delete historical data when removing a habit
 
 ### Views
+- **Dashboard View** -- Summary screen with progress rings, completion rates, streak counts, best/weakest weekday, and per-habit analytics
 - **Today View** -- Quick daily overview with habit cards, inline toggle buttons, and day blocks showing completion counts
 - **Month View** -- Calendar-style grid for the selected month
 - **Year View** -- Full-year heatmap with responsive wrapping (adapts to window width)
@@ -42,8 +43,7 @@ An interactive habit tracking plugin for Obsidian with a Today view, monthly and
 
 The following features are planned but not yet implemented:
 
-- **Dashboard Overview** -- Multi-tracker grid with completion stats, mini heatmaps, and streak summaries at a glance
-- **Progress Rings** -- SVG circular progress indicators showing overall completion percentage per habit
+- **Multi-Tracker Dashboard** -- Aggregate completion stats, mini heatmaps, and streak summaries across multiple tracker files
 
 ## Installation
 
@@ -118,7 +118,7 @@ habits:
    - `Habit Tracker: Open Habit Tracker`
 
 2. **Tracker View** -- A single tracker view with:
-   - **Controls bar**: Add/Edit/Delete habit buttons, habit selection dropdown, and view toggle (Today/Month/Year/All)
+   - **Controls bar**: Add/Edit/Delete habit buttons, habit selection dropdown, and view toggle (Dashboard/Today/Month/Year/All)
    - **Main area**: One card per habit with:
      - Week completion count (X/Y days)
      - Inline toggle button for today
@@ -161,6 +161,7 @@ Obsidian-Habit-tracker/
 │   ├── styles.css           # Plugin stylesheet
 │   └── views/
 │       ├── modals.ts        # Add/Edit/Delete habit modals
+│       ├── dashboard.ts     # Dashboard summary and analytics rendering
 │       ├── today.ts         # Today view rendering
 │       ├── month.ts         # Month view rendering
 │       ├── year.ts          # Year heatmap view rendering

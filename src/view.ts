@@ -3,6 +3,7 @@ import type HabitTrackerPlugin from './main';
 import type { Habit } from './types';
 import { isTFile } from './parser';
 import { renderTodayView } from './views/today';
+import { renderDashboardView } from './views/dashboard';
 import { renderMonthView } from './views/month';
 import { renderYearView } from './views/year';
 import { renderYearOverview } from './views/yearOverview';
@@ -34,7 +35,7 @@ export class HabitTrackerView extends ItemView {
     contentEl.empty();
     // Create two persistent sections that don't get destroyed on re-render
     this.controlsPanel = contentEl.createEl('div', { cls: 'habit-controls-panel' });
-    this.viewPanel = contentEl.createEl('div', { cls: 'habit-view-panel' });
+    this.viewPanel = contentEl.createEl('div', { cls: 'habit-view-panel habit-content' });
     // Subscribe to store changes for automatic re-rendering
     this.unsubscribeStore = subscribe((payload) => {
       if (payload && payload.type === 'toggle' && payload.habitName && payload.date) {
@@ -343,7 +344,7 @@ export class HabitTrackerView extends ItemView {
 
     // Create two persistent sections if they don't exist yet
     this.controlsPanel = wrapped.createEl('div', { cls: 'habit-controls-panel' });
-    this.viewPanel = wrapped.createEl('div', { cls: 'habit-view-panel' });
+    this.viewPanel = wrapped.createEl('div', { cls: 'habit-view-panel habit-content' });
 
     const controlsEl = this.renderControls(this.controlsPanel);
     const contentWrapper = this.viewPanel;
@@ -395,7 +396,9 @@ export class HabitTrackerView extends ItemView {
       this.plugin.setSelectedHabit(habits[0].name);
     }
 
-    if (state.viewType === 'today') {
+    if (state.viewType === 'dashboard') {
+      renderDashboardView(contentWrapper, this.plugin, state);
+    } else if (state.viewType === 'today') {
       renderTodayView(contentWrapper, this.plugin, state);
     } else if (state.viewType === 'month') {
       renderMonthView(contentWrapper, this.plugin, state);
@@ -469,6 +472,7 @@ export class HabitTrackerView extends ItemView {
       const radioGroup = viewControlsContainer.createEl('div', { cls: 'view-radio-group' });
 
       const viewOptions = [
+        { value: 'dashboard', text: 'Dash', title: 'Dashboard summary and analytics' },
         { value: 'today', text: 'Today', title: "Today's habits overview" },
         { value: 'month', text: 'Month', title: 'Traditional monthly calendar' },
         { value: 'yearOverview', text: 'Year', title: 'All 12 months at a glance' },
