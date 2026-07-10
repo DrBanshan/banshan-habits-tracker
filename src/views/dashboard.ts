@@ -86,17 +86,17 @@ function renderProgressRing(container: HTMLElement, label: string, done: number,
   const circumference = 2 * Math.PI * radius;
 
   const card = container.createEl('div', { cls: 'dashboard-ring-card' });
-  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  const svg = activeDocument.createElementNS('http://www.w3.org/2000/svg', 'svg');
   svg.setAttribute('viewBox', `0 0 ${size} ${size}`);
   svg.setAttribute('class', 'dashboard-ring');
 
-  const track = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+  const track = activeDocument.createElementNS('http://www.w3.org/2000/svg', 'circle');
   track.setAttribute('cx', String(size / 2));
   track.setAttribute('cy', String(size / 2));
   track.setAttribute('r', String(radius));
   track.setAttribute('class', 'dashboard-ring-track');
 
-  const value = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+  const value = activeDocument.createElementNS('http://www.w3.org/2000/svg', 'circle');
   value.setAttribute('cx', String(size / 2));
   value.setAttribute('cy', String(size / 2));
   value.setAttribute('r', String(radius));
