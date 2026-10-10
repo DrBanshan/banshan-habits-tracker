@@ -1,7 +1,11 @@
 import * as yaml from 'yaml';
 import type { App, TAbstractFile, TFile } from 'obsidian';
-import type { Tracker, Habit, CompletionMap, CompletionStatus } from './types';
+import type { Tracker } from './types';
 import { DEFAULT_HABITS_FILE } from './types';
+import { emptyDoc, normalizeDoc } from './model/tracker';
+import { deserialize } from './storage/deserialize';
+import { serialize } from './storage/serialize';
+import { buildMonthHeader, daysOfMonth } from './storage/format';
 
 // Runtime-safe check for TFile without requiring the obsidian package at build time
 function isTFileType(file: TAbstractFile | null): boolean {
@@ -14,339 +18,27 @@ export function isTFile(file: TAbstractFile | null): file is TFile {
   return isTFileType(file);
 }
 
-interface RawYaml {
-  name: string;
-  created: string;
-  habits: Array<{
-    name: string;
-    icon: string;
-    frequency: string;
-    specificDays?: string[];
-    streakMode: string;
-    startDate: string;
-    color?: string;
-  }>;
-}
-
-function stripIcon(text: string): string {
-  return text.replace(/[\u{100}-\u{10FFFF}]+\s*/u, '');
-}
-
-function parseHabit(raw: { name: string; icon: string; frequency: string; specificDays?: string[]; streakMode: string; startDate: string; color?: string }): Habit {
-  return {
-    name: raw.name,
-    icon: raw.icon,
-    frequency: (raw.frequency as Habit['frequency']) || 'daily',
-    specificDays: raw.specificDays,
-    streakMode: (raw.streakMode as Habit['streakMode']) || 'strict',
-    startDate: raw.startDate,
-    color: raw.color || '#0A84FF'
-  };
-}
-
-function convertToISODate(dateStr: string): string {
-  // Already ISO format
-  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
-  
-  // Old format: "Mon 6/12" or "Mon 06/12"
-  const match = dateStr.match(/^[A-Za-z]+\s+(\d{1,2})\/(\d{1,2})$/);
-  if (match) {
-    const month = parseInt(match[1], 10);
-    const day = parseInt(match[2], 10);
-    const year = new Date().getFullYear();
-    const d = new Date(year, month - 1, day);
-    if (!isNaN(d.getTime())) {
-      const y = d.getFullYear();
-      const m = String(d.getMonth() + 1).padStart(2, '0');
-      const dd = String(d.getDate()).padStart(2, '0');
-      return `${y}-${m}-${dd}`;
-    }
-  }
-  
-  // Unknown format, return as-is
-  return dateStr;
-}
-
 /**
- * Parse a multi-section tracker file.
- * Sections are separated by ## headers. Each section contains a markdown table.
- * The first section is the current month, subsequent sections are previous months.
+ * Read a habits file through the tolerant reader, so every existing call site gains the
+ * table-only merge and the no-loss guarantees without changing.
  */
 export function parseTrackerFile(content: string): Tracker | null {
-  const yamlMatch = content.match(/^---\n([\s\S]*?)\n---/);
-  if (!yamlMatch) return null;
-
-  let parsed: unknown;
-  try {
-    parsed = yaml.parse(yamlMatch[1]);
-  } catch {
-    return null;
-  }
-
-  if (!parsed || typeof parsed !== 'object' || !('habits' in parsed)) return null;
-  const typedRaw = parsed as RawYaml;
-
-  if (!typedRaw.habits || typedRaw.habits.length === 0) return null;
-
-  const habits = typedRaw.habits.map(parseHabit);
-  const completions: CompletionMap = {};
-  for (const habit of habits) {
-    completions[habit.name] = {};
-  }
-
-  const lines = content.split('\n');
-  
-  // Find all section headers (## Month Year format)
-  const sectionHeaders: { index: number; header: string }[] = [];
-  for (let i = 0; i < lines.length; i++) {
-    const trimmed = lines[i].trim();
-    if (trimmed.startsWith('## ')) {
-      sectionHeaders.push({ index: i, header: trimmed });
-    }
-  }
-
-  // Parse each section
-  const tableRanges: { start: number; end: number }[] = [];
-  for (let i = 0; i < sectionHeaders.length; i++) {
-    const start = sectionHeaders[i].index;
-    const end = i + 1 < sectionHeaders.length ? sectionHeaders[i + 1].index : lines.length;
-    tableRanges.push({ start, end });
-  }
-
-  // If no section headers found, treat entire content after YAML as one table (legacy format)
-  if (tableRanges.length === 0) {
-    let tableStart = -1;
-    for (let i = 0; i < lines.length; i++) {
-      if (lines[i].trim().startsWith('|') && !lines[i].trim().startsWith('|---')) {
-        tableStart = i;
-        break;
-      }
-    }
-    if (tableStart !== -1) {
-      parseTableSection(lines, tableStart, lines.length, habits, completions);
-    }
-  } else {
-    for (const range of tableRanges) {
-      parseTableSection(lines, range.start, range.end, habits, completions);
-    }
-  }
-
-  return {
-    name: typedRaw.name,
-    created: typedRaw.created,
-    habits,
-    completions
-  };
-}
-
-function parseTableSection(
-  lines: string[],
-  start: number,
-  end: number,
-  habits: Habit[],
-  completions: CompletionMap
-): void {
-  let tableStart = -1;
-  for (let i = start; i < end; i++) {
-    if (lines[i].trim().startsWith('|') && !lines[i].trim().startsWith('|---')) {
-      tableStart = i;
-      break;
-    }
-  }
-
-  if (tableStart === -1) return;
-
-  const headerRow = lines[tableStart].trim();
-  const headers = headerRow.split('|').map(h => h.trim()).filter(h => h && h !== 'Habit');
-
-  for (let i = tableStart + 2; i < end; i++) {
-    const line = lines[i].trim();
-    if (!line.startsWith('|')) break;
-
-    const cells = line.split('|').map(c => c.trim());
-    if (cells.length < 2) continue;
-
-    const habitName = stripIcon(cells[1]);
-    for (let j = 2; j < cells.length; j++) {
-      let date = headers[j - 2] || '';
-      date = convertToISODate(date);
-      const rawStatus = cells[j];
-      const status: CompletionStatus = rawStatus === '✓' ? 'completed' : rawStatus === '✗' ? 'missed' : 'unmarked';
-      // Only store non-unmarked statuses — empty cells don't count as data
-      if (completions[habitName] && status !== 'unmarked') {
-        completions[habitName][date] = status;
-      }
-    }
-  }
+  const { doc, failure } = deserialize(content);
+  if (!doc || failure) return null;
+  return { name: doc.name, created: doc.created, habits: doc.habits, completions: doc.completions };
 }
 
 /**
- * Find months that have any data for any habit.
- * Returns sorted array of { year, month } objects.
+ * Author a whole habits file from one document. `daysToShow` and `filterEmptyMonths` stay in the
+ * signature for call-site compatibility; the writer decides which months deserve a section.
  */
-function findMonthsWithData(completions: CompletionMap): Array<{ year: number; month: number }> {
-  const monthSet = new Set<string>();
-  
-  for (const habitName of Object.keys(completions)) {
-    const entries = completions[habitName];
-    for (const dateStr of Object.keys(entries)) {
-      const status = entries[dateStr];
-      // Only count months with actual data (completed or missed), not unmarked
-      if (status === 'completed' || status === 'missed') {
-        const parts = dateStr.split('-');
-        if (parts.length === 3) {
-          const year = parseInt(parts[0], 10);
-          const month = parseInt(parts[1], 10) - 1;
-          monthSet.add(`${year}-${month}`);
-        }
-      }
-    }
-  }
-  
-  const result: Array<{ year: number; month: number }> = [];
-  for (const key of monthSet) {
-    const [year, month] = key.split('-').map(Number);
-    result.push({ year, month });
-  }
-  
-  // Sort by year desc, then month desc
-  result.sort((a, b) => b.year - a.year || b.month - a.month);
-  return result;
+export function generateTrackerContent(tracker: Tracker, daysToShow = 21, filterEmptyMonths = true): string {
+  return serialize(normalizeDoc({
+    ...emptyDoc(tracker.name), created: tracker.created,
+    habits: tracker.habits, completions: tracker.completions
+  }));
 }
 
-/**
- * Generate tracker content.
- * @param filterEmptyMonths - If true, only write months with actual data. If false, write all months from earliest data to current month.
- */
-export function generateTrackerContent(tracker: Tracker, daysToShow: number = 21, filterEmptyMonths: boolean = true): string {
-  const yamlContent = yaml.stringify({
-      name: tracker.name,
-      created: tracker.created,
-      habits: tracker.habits.map(h => ({
-        name: h.name,
-        icon: h.icon,
-        frequency: h.frequency,
-        specificDays: h.specificDays,
-        streakMode: h.streakMode,
-        startDate: h.startDate,
-        color: h.color
-      }))
-    });
-
-  const lines: string[] = [];
-  const today = new Date();
-  const currentYear = today.getFullYear();
-  const currentMonth = today.getMonth();
-
-  let allMonths: Array<{ year: number; month: number }>;
-
-  if (filterEmptyMonths) {
-    // Only write months with actual data, plus current month
-    const monthsWithData = findMonthsWithData(tracker.completions);
-    const monthSet = new Set(monthsWithData.map(m => `${m.year}-${m.month}`));
-    monthSet.add(`${currentYear}-${currentMonth}`);
-    allMonths = Array.from(monthSet).map(key => {
-      const [year, month] = key.split('-').map(Number);
-      return { year, month };
-    });
-    allMonths.sort((a, b) => b.year - a.year || b.month - a.month);
-  } else {
-    // Write all months from earliest data month to current month
-    const monthsWithData = findMonthsWithData(tracker.completions);
-    if (monthsWithData.length === 0) {
-      // No data at all, just write current month
-      allMonths = [{ year: currentYear, month: currentMonth }];
-    } else {
-      const minYear = Math.min(...monthsWithData.map(m => m.year));
-      const minMonth = monthsWithData.filter(m => m.year === minYear).reduce((a, b) => Math.min(a, b.month), 11);
-      allMonths = [];
-      for (let year = currentYear; year >= minYear; year--) {
-        const startMonth = year === currentYear ? currentMonth : 11;
-        const endMonth = year === minYear ? minMonth - 1 : -1;
-        for (let month = startMonth; month > endMonth; month--) {
-          allMonths.push({ year, month });
-        }
-      }
-    }
-  }
-
-  for (const { year, month } of allMonths) {
-    const monthDates = generateMonthDates(year, month);
-    
-    // Find habits that have data in this month
-    let activeHabits: Habit[];
-    if (filterEmptyMonths) {
-      // Only include habits with data in this month
-      activeHabits = tracker.habits.filter(h => {
-        const habitDates = Object.keys(tracker.completions[h.name] || {});
-        return habitDates.some(d => {
-          const parts = d.split('-');
-          return parseInt(parts[0], 10) === year && (parseInt(parts[1], 10) - 1) === month;
-        });
-      });
-
-      // Also include deleted habits that have data in this month
-      if (tracker.deletedHabits) {
-        for (const dh of tracker.deletedHabits) {
-          const habitDates = Object.keys(tracker.completions[dh.name] || {});
-          const hasData = habitDates.some(d => {
-            const parts = d.split('-');
-            return parseInt(parts[0], 10) === year && (parseInt(parts[1], 10) - 1) === month;
-          });
-          if (hasData) {
-            activeHabits.push({
-              name: dh.name,
-              icon: '🗑️',
-              frequency: 'daily' as const,
-              streakMode: 'strict' as const,
-              startDate: '',
-              color: '#999999'
-            });
-          }
-        }
-      }
-
-      if (activeHabits.length === 0) continue;
-    } else {
-      // Write all months with all habits (even if no data in this specific month)
-      activeHabits = [...tracker.habits];
-    }
-
-    lines.push(`## ${getMonthName(month)} ${year}`);
-    lines.push(`| Habit | ${monthDates.join(' | ')} |`);
-    lines.push(`| ${Array(monthDates.length + 1).fill('---').join(' | ')} |`);
-
-    for (const habit of activeHabits) {
-      const cells = [`${habit.icon} ${habit.name}`];
-      for (const date of monthDates) {
-        const status = tracker.completions[habit.name]?.[date];
-        cells.push(status === 'completed' ? '✓' : status === 'missed' ? '✗' : '');
-      }
-      lines.push(`| ${cells.join(' | ')} |`);
-    }
-  }
-
-  return `---\n${yamlContent}---\n\n` + lines.join('\n') + '\n';
-}
-
-function generateMonthDates(year: number, month: number): string[] {
-  const dates: string[] = [];
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  for (let day = 1; day <= daysInMonth; day++) {
-    const d = new Date(year, month, day);
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, '0');
-    const dd = String(d.getDate()).padStart(2, '0');
-    dates.push(`${y}-${m}-${dd}`);
-  }
-  return dates;
-}
-
-function getMonthName(month: number): string {
-  const names = ['January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'];
-  return names[month];
-}
 
 export async function readTrackerFile(app: App, path: string): Promise<Tracker | null> {
   const file = app.vault.getAbstractFileByPath(path);
@@ -356,13 +48,14 @@ export async function readTrackerFile(app: App, path: string): Promise<Tracker |
 }
 
 /**
- * Build a month section string for the given year/month and habits.
+ * Build a month section string for the given year/month and habits. Used only by the legacy
+ * single-section write path in writeTrackerFile, which Task 7 retires.
  */
 function buildMonthSection(tracker: Tracker, year: number, month: number): string {
-  const monthDates = generateMonthDates(year, month);
+  const monthDates = daysOfMonth(year, month);
   const lines: string[] = [];
 
-  lines.push(`## ${getMonthName(month)} ${year}`);
+  lines.push(buildMonthHeader(year, month));
   lines.push(`| Habit | ${monthDates.join(' | ')} |`);
   lines.push(`| ${Array(monthDates.length + 1).fill('---').join(' | ')} |`);
 
@@ -410,7 +103,7 @@ export async function writeTrackerFile(app: App, path: string, tracker: Tracker,
 
   const lines = content.split('\n');
 
-  const targetHeader = `## ${getMonthName(writeMonth)} ${writeYear}`;
+  const targetHeader = buildMonthHeader(writeYear, writeMonth);
 
   let headerIndex = -1;
   for (let i = 0; i < lines.length; i++) {

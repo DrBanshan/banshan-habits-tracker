@@ -101,4 +101,27 @@ describe('deserialize', () => {
     const out = deserialize(src);
     expect(out.doc!.completions.Reading).toEqual({ '2026-10-01': 'completed' });
   });
+
+  it('still reads the pre-month-section format: frontmatter then one bare table', () => {
+    const src = [
+      '---', 'name: Legacy', 'created: 2026-06-10', 'habits:', '  - name: Habit', '    icon: 🏃',
+      '    frequency: daily', '    streakMode: strict', '    startDate: 2026-06-10', '---', '',
+      '| Habit | Mon 6/10 | Tue 6/11 |', '| --- | --- | --- |', '| 🏃 Habit | ✓ | |'
+    ].join('\n');
+    const out = deserialize(src);
+    expect(out.failure).toBeNull();
+    // The year of a legacy header comes from the document, not from today.
+    expect(out.doc!.completions.Habit).toEqual({ '2026-06-10': 'completed' });
+  });
+
+  it('reads several month sections into one habit list', () => {
+    const src = ['---', 'name: Two', 'created: 2026-05-01', 'habits:', '  - name: Run', '    icon: 🏃',
+      '    frequency: daily', '    streakMode: strict', '    startDate: 2026-05-01', '---', '',
+      '## June 2026', '| Habit | 2026-06-10 |', '| --- | --- |', '| 🏃 Run | ✓ |', '',
+      '## May 2026', '| Habit | 2026-05-02 |', '| --- | --- |', '| 🏃 Run | ✓ |'].join('\n');
+    const out = deserialize(src);
+    expect(out.doc!.habits).toHaveLength(1);
+    expect(out.doc!.completions.Run).toEqual({ '2026-06-10': 'completed', '2026-05-02': 'completed' });
+    expect(out.healed).toEqual([]);
+  });
 });

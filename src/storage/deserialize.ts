@@ -69,6 +69,33 @@ function readColumnDates(lines: string[], start: number, end: number, fallbackYe
   return [];
 }
 
+/** Sections to scan: a `## Month Year` heading, or one bare table for the pre-month-section format. */
+interface Scan { start: number; end: number; fallbackYear: number }
+
+function yearOf(created: string): number {
+  const match = /^(\d{4})/.exec(created);
+  const year = match ? Number(match[1]) : NaN;
+  return Number.isInteger(year) && year > 0 ? year : new Date().getFullYear();
+}
+
+function scansFor(lines: string[], created: string): Scan[] {
+  const scans: Scan[] = [];
+  for (let s = 0; s < lines.length; s++) {
+    const header = parseMonthHeader(lines[s]);
+    if (!header) continue;
+    let end = lines.length;
+    for (let i = s + 1; i < lines.length; i++) {
+      if (parseMonthHeader(lines[i])) { end = i; break; }
+    }
+    scans.push({ start: s + 1, end, fallbackYear: header.year });
+  }
+  if (scans.length > 0) return scans;
+
+  // The format from before month sections: frontmatter then one table, no headings.
+  const first = lines.findIndex(line => line.trim().startsWith('|'));
+  return first === -1 ? [] : [{ start: first, end: lines.length, fallbackYear: yearOf(created) }];
+}
+
 export function deserialize(content: string): DeserializeResult {
   const fmText = extractFrontmatter(content);
   if (fmText === null) return { doc: null, failure: 'no-frontmatter', healed: [] };
@@ -106,16 +133,11 @@ export function deserialize(content: string): DeserializeResult {
   const defined = new Set([...doc.habits.map(h => h.name), ...doc.deletedHabits.map(d => d.name)]);
   const healed = new Set<string>();
 
-  for (let s = 0; s < lines.length; s++) {
-    const header = parseMonthHeader(lines[s]);
-    if (!header) continue;
-    let end = lines.length;
-    for (let i = s + 1; i < lines.length; i++) {
-      if (parseMonthHeader(lines[i])) { end = i; break; }
-    }
-    const columns = readColumnDates(lines, s + 1, end, header.year);
+  for (const scan of scansFor(lines, doc.created)) {
+    const { start, end, fallbackYear } = scan;
+    const columns = readColumnDates(lines, start, end, fallbackYear);
 
-    let row = s + 1;
+    let row = start;
     while (row < end && !lines[row].trim().startsWith('|')) row++;
     row += 2;                                   // skip the header row and the separator row
 
