@@ -61,18 +61,27 @@ export function habitNames(doc: TrackerDoc): Set<string> {
 }
 
 /**
+ * Habit and date keys come from user text, so a map lookup can hit an inherited member
+ * (`toString`, `valueOf`, `hasOwnProperty`) instead of missing. Every presence test on a
+ * completions map goes through this, or such a row reads as present and is silently dropped.
+ */
+function owns(map: object, key: string): boolean {
+  return Object.prototype.hasOwnProperty.call(map, key);
+}
+
+/**
  * Repairs the two representable inconsistencies: a habit with no completions entry,
  * and completions held under a name nothing defines (kept as pendingData, never dropped).
  */
 export function normalizeDoc(doc: TrackerDoc): TrackerDoc {
   const completions: CompletionMap = {};
-  for (const h of doc.habits) completions[h.name] = { ...(doc.completions[h.name] ?? {}) };
+  for (const h of doc.habits) completions[h.name] = { ...(owns(doc.completions, h.name) ? doc.completions[h.name] : {}) };
   const pendingData = [...doc.pendingData];
   for (const d of doc.deletedHabits) {
-    if (!completions[d.name]) completions[d.name] = {};
+    if (!owns(completions, d.name)) completions[d.name] = {};
   }
   for (const [name, cells] of Object.entries(doc.completions)) {
-    if (completions[name]) continue;
+    if (owns(completions, name)) continue;
     completions[name] = { ...cells };
     if (!pendingData.includes(name)) pendingData.push(name);
   }
@@ -82,7 +91,7 @@ export function normalizeDoc(doc: TrackerDoc): TrackerDoc {
 
 export function assertInvariants(doc: TrackerDoc, where: string): void {
   for (const h of doc.habits) {
-    if (!doc.completions[h.name]) {
+    if (!owns(doc.completions, h.name)) {
       throw new Error(`${where}: habit "${h.name}" has no completions entry`);
     }
   }
@@ -109,8 +118,9 @@ export function diffDocs(intended: TrackerDoc, actual: TrackerDoc): DocDiff {
     .filter(name => !actual.habits.some(h => h.name === name));
   const lostCompletions: DocDiff['lostCompletions'] = [];
   for (const [name, cells] of Object.entries(intended.completions)) {
+    const actualCells = owns(actual.completions, name) ? actual.completions[name] : undefined;
     for (const [date, status] of Object.entries(cells)) {
-      if (actual.completions[name]?.[date] !== status) {
+      if (actualCells?.[date] !== status) {
         lostCompletions.push({ habit: name, date, status });
       }
     }

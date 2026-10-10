@@ -25,6 +25,27 @@ describe('normalizeDoc', () => {
     expect(out.pendingData).toContain('Ghost');
     expect(out.completions.Old).toBeDefined();
   });
+
+  it('keeps a completions row named after an Object.prototype member', () => {
+    const doc = {
+      ...emptyDoc(), habits: [] as Habit[],
+      completions: { valueOf: { '2026-01-02': 'completed' as const } }
+    };
+    const out = normalizeDoc(doc);
+    expect(out.pendingData).toContain('valueOf');
+    expect(Object.prototype.hasOwnProperty.call(out.completions, 'valueOf')).toBe(true);
+    expect(out.completions.valueOf).toEqual({ '2026-01-02': 'completed' });
+  });
+
+  it('gives a deleted habit named after an Object.prototype member its own entry', () => {
+    const doc = {
+      ...emptyDoc(), habits: [habit('Read')],
+      completions: {}, deletedHabits: [{ name: 'hasOwnProperty', deletedAt: '2026-01-03' }]
+    };
+    const out = normalizeDoc(doc);
+    expect(Object.prototype.hasOwnProperty.call(out.completions, 'hasOwnProperty')).toBe(true);
+    expect(out.completions.hasOwnProperty).toEqual({});
+  });
 });
 
 describe('assertInvariants', () => {
@@ -41,6 +62,11 @@ describe('assertInvariants', () => {
   it('rejects a habit with no completions entry', () => {
     const doc = { ...emptyDoc(), habits: [habit('Read')], completions: {} };
     expect(() => assertInvariants(doc, 'test')).toThrow(/Read/);
+  });
+
+  it('rejects a habit named after an Object.prototype member with no own entry', () => {
+    const doc = { ...emptyDoc(), habits: [habit('toString')], completions: {} };
+    expect(() => assertInvariants(doc, 'test')).toThrow(/has no completions entry/);
   });
 });
 

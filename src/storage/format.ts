@@ -24,14 +24,18 @@ export function parseIsoDate(text: string): Date | null {
   const m = ISO_DATE.exec(text);
   if (!m) return null;
   const date = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
-  return Number.isNaN(date.getTime()) ? null : date;
+  // new Date() rolls impossible days over into a real one, so compare the parts back.
+  return formatDate(date) === text ? date : null;
 }
 
 /** Accepts canonical ISO and the legacy "Mon 6/10" form, which carries no year. */
 export function toIsoDate(header: string, fallbackYear = new Date().getFullYear()): string | null {
-  if (ISO_DATE.test(header)) return header;
+  if (ISO_DATE.test(header)) return parseIsoDate(header) ? header : null;
   const legacy = LEGACY_DATE.exec(header.trim());
-  if (legacy) return `${fallbackYear}-${pad2(Number(legacy[1]))}-${pad2(Number(legacy[2]))}`;
+  if (legacy) {
+    const candidate = `${fallbackYear}-${pad2(Number(legacy[1]))}-${pad2(Number(legacy[2]))}`;
+    return parseIsoDate(candidate) ? candidate : null;
+  }
   return null;
 }
 
