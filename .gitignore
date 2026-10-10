@@ -3,11 +3,7 @@ node_modules/
 skills-lock.json
 habits.md
 .obsidian/
-docs/*
-!docs/superpowers/
-docs/superpowers/*
-!docs/superpowers/specs/
-!docs/superpowers/plans/
+docs/superpowers/
 acceptance-report.json
 AGENTS.md
 obsidian-plugin-review-results.md
