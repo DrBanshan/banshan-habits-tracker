@@ -1,7 +1,8 @@
 import { App, Plugin, PluginSettingTab, Setting } from 'obsidian';
 import { HabitTrackerView, VIEW_TYPE_HABIT_TRACKER } from './view';
-import { init, loadHabits, toggleDay, addHabit, renameHabit, deleteHabit, setHabitColor, setViewType, setSelectedHabit, setSelectedMonth, setSelectedYear, getState, reorderHabits, updateSettings, setPlugin, restoreFromBackup } from './store';
-import { RestoreDataFileModal } from './views/modals';
+import { init, loadHabits, toggleDay, addHabit, renameHabit, deleteHabit, setHabitColor, setViewType, setSelectedHabit, setSelectedMonth, setSelectedYear, getState, reorderHabits, updateSettings, setPlugin, restoreFromBackup, restoreHabit, isSaving } from './store';
+import { startWatcher } from './storage/vaultFile';
+import { RestoreDataFileModal, RestoreDeletedHabitModal } from './views/modals';
 import { DEFAULT_HABITS_FILE } from './types';
 import { BackupStore } from './storage/backup';
 import type { Habit, ViewType, Frequency, StreakMode } from './types';
@@ -19,6 +20,7 @@ const DEFAULT_SETTINGS: PluginSettings = { habitsFilePath: DEFAULT_HABITS_FILE, 
 export default class HabitTrackerPlugin extends Plugin {
   settings!: PluginSettings;
   backups!: BackupStore;
+  private stopWatcher: (() => void) | null = null;
 
   async onload(): Promise<void> {
     console.log('[HabitTracker] Loading plugin...');
@@ -35,6 +37,9 @@ export default class HabitTrackerPlugin extends Plugin {
 
       await loadHabits();
       console.log('[HabitTracker] Habits loaded');
+
+      this.setWatcherPath();
+      console.log('[HabitTracker] Watching the data file for outside edits');
 
       this.registerView(VIEW_TYPE_HABIT_TRACKER, (leaf) => new HabitTrackerView(leaf, this));
       console.log('[HabitTracker] View registered');
@@ -53,6 +58,14 @@ export default class HabitTrackerPlugin extends Plugin {
         id: 'restore-data-file',
         name: 'Restore previous data file',
         callback: () => this.openRestoreBackupModal()
+      });
+
+      this.addCommand({
+        id: 'restore-deleted-habit',
+        name: 'Restore deleted habit',
+        callback: () => {
+          new RestoreDeletedHabitModal(this, async () => { this.refreshView(); }).open();
+        }
       });
 
       this.addSettingTab(new HabitTrackerSettingTab(this.app, this));
@@ -151,8 +164,24 @@ export default class HabitTrackerPlugin extends Plugin {
   setSelectedYear(year: number) { setSelectedYear(year); void this.refreshView(); }
   reorderHabits(fromIndex: number, toIndex: number) { reorderHabits(fromIndex, toIndex); void this.refreshView(); }
 
+  restoreHabit(name: string) { restoreHabit(name); void this.refreshView(); }
+
+  /**
+   * (Re)attaches the vault watcher for the current data file path. A settings change to the path has
+   * to come through here, or the old listener keeps watching a file the plugin no longer uses.
+   */
+  setWatcherPath(): void {
+    this.stopWatcher?.();
+    this.stopWatcher = startWatcher(this.app, this.settings.habitsFilePath, {
+      onExternalEdit: () => { void this.loadHabits(); },
+      isBusy: () => isSaving()
+    });
+  }
+
   onunload(): void {
-    // Cleanup handled by store subscription management
+    this.stopWatcher?.();
+    this.stopWatcher = null;
+    // Remaining cleanup is handled by store subscription management
   }
 }
 
@@ -178,6 +207,8 @@ class HabitTrackerSettingTab extends PluginSettingTab {
         .onChange(async (value) => {
           this.plugin.settings.habitsFilePath = value;
           await this.plugin.saveSettings();
+          // The watcher has to follow the path, or it keeps watching the file the plugin left behind.
+          this.plugin.setWatcherPath();
         }));
 
     new Setting(containerEl)

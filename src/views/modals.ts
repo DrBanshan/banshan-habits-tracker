@@ -275,3 +275,38 @@ export class RestoreDataFileModal extends Modal {
     })();
   }
 }
+
+/**
+ * Lists habits deleted with their data kept, and puts one back with its history intact. Only reached
+ * for the case where deleting was reversible: `keepDeletedData` left the completions in place.
+ */
+export class RestoreDeletedHabitModal extends Modal {
+  constructor(private plugin: HabitTrackerPlugin, private onDone: () => Promise<void>) {
+    super(plugin.app);
+  }
+
+  onOpen(): void {
+    const { contentEl } = this;
+    contentEl.empty();
+    contentEl.createEl('h2', { text: 'Restore deleted habit' });
+    const deleted = this.plugin.getState().deletedHabits ?? [];
+    if (deleted.length === 0) {
+      contentEl.createEl('p', { text: 'Nothing has been deleted yet.' });
+      return;
+    }
+    contentEl.createEl('p', { text: 'Restoring brings the habit back with the history that was kept.' });
+    for (const entry of deleted) {
+      this.addOption(contentEl, entry.name, async () => {
+        this.plugin.restoreHabit(entry.name);
+        this.close();
+        await this.onDone();
+      });
+    }
+  }
+
+  private addOption(container: HTMLElement, name: string, run: () => Promise<void>): void {
+    const row = container.createDiv({ cls: 'restore-row' });
+    row.createEl('button', { cls: 'restore-habit-button', text: name, attr: { 'aria-label': `Restore ${name}` } })
+      .addEventListener('click', () => { void run(); });
+  }
+}

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { addHabit, deleteHabit, getState, init, loadHabits, renameHabit, toggleDay, whenSaved } from '../../src/store';
+import { addHabit, deleteHabit, getState, init, loadHabits, renameHabit, restoreHabit, toggleDay, whenSaved } from '../../src/store';
 import { serialize } from '../../src/storage/serialize';
 import { emptyDoc, normalizeDoc } from '../../src/model/tracker';
 import { fakeApp } from './helpers';
@@ -68,5 +68,39 @@ describe('store saves', () => {
     await settled();
     expect(app.content).toContain('name: My Fitness');
     expect(app.content).toContain('created: 2026-10-01');
+  });
+});
+
+describe('restoring a habit deleted with data kept', () => {
+  it('brings the habit back with every completion it had', async () => {
+    deleteHabit('Reading', true);
+    await settled();
+    expect(getState().habits.some(h => h.name === 'Reading')).toBe(false);
+
+    restoreHabit('Reading');
+    await settled();
+
+    expect(getState().habits.some(h => h.name === 'Reading')).toBe(true);
+    expect(getState().completions.Reading?.[today]).toBe('completed');
+    expect(getState().deletedHabits.some(d => d.name === 'Reading')).toBe(false);
+    // Both halves agree again: the properties block knows the habit and the table carries its tick.
+    expect(app.content).toMatch(/- name: Reading\b/);
+    const row = app.content.split('\n').find(l => l.includes('Reading ')) ?? '';
+    expect(row).not.toBe('');
+    expect(row).toContain('✓');
+  });
+
+  it('does not invent a duplicate when the name is already present', async () => {
+    restoreHabit('Reading');                                  // never deleted: nothing to bring back
+    await settled();
+    expect(getState().habits.filter(h => h.name === 'Reading')).toHaveLength(1);
+  });
+
+  it('leaves an unknown name alone', async () => {
+    const before = app.content;
+    restoreHabit('Never existed');
+    await settled();
+    expect(getState().habits.some(h => h.name === 'Never existed')).toBe(false);
+    expect(app.content).toBe(before);
   });
 });

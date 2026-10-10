@@ -137,3 +137,60 @@ export function isOwnWrite(path: string, content: string): boolean {
 export function forgetWrite(path: string): void {
   lastWritten.delete(path);
 }
+
+export interface WatcherHandlers {
+  /** Called once per settled external edit, after the debounce, with the data file path. */
+  onExternalEdit: (path: string) => void;
+  /** True while a local save is in flight; the reload is held rather than raced against it. */
+  isBusy?: () => boolean;
+  debounceMs?: number;
+}
+
+// At the production debounce this is around fifteen seconds of waiting on a save that never clears,
+// after which the watcher stops asking rather than polling for the rest of the session.
+const MAX_HELD_ROUNDS = 30;
+
+/**
+ * Watches the data file for edits made outside the plugin. Our own writes echo back as modify
+ * events, so the echo is recognised by content fingerprint rather than by timing, which is the only
+ * comparison that holds when several writes and edits are in flight at once.
+ */
+export function startWatcher(app: App, path: string, handlers: WatcherHandlers): () => void {
+  const debounceMs = handlers.debounceMs ?? 500;
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  let heldRounds = 0;
+  let stopped = false;
+
+  const flush = () => {
+    timer = null;
+    if (stopped) return;
+    if (handlers.isBusy?.() === true) {
+      if (heldRounds >= MAX_HELD_ROUNDS) return;
+      heldRounds++;
+      timer = setTimeout(flush, debounceMs);          // hold the reload until the save drains
+      return;
+    }
+    heldRounds = 0;
+    handlers.onExternalEdit(path);
+  };
+
+  const onModify = (data: { file?: { path?: string } }) => {
+    if (data?.file?.path !== path) return;
+    void (async () => {
+      if (stopped) return;
+      const text = await readExisting(app, path);
+      if (text !== null && isOwnWrite(path, text)) return;
+      if (timer !== null) clearTimeout(timer);
+      heldRounds = 0;
+      timer = setTimeout(flush, debounceMs);
+    })();
+  };
+
+  const ref = app.vault.on('modify', onModify as (...data: unknown[]) => unknown);
+  return () => {
+    stopped = true;
+    if (timer !== null) clearTimeout(timer);
+    // offref takes the reference on() handed back, and nothing else.
+    app.vault.offref(ref);
+  };
+}

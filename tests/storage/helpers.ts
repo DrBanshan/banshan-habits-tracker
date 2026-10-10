@@ -37,7 +37,8 @@ export function fakeApp(initial = ''): FakeApp {
         handlers.add(handler);
         return () => { handlers.delete(handler); };
       },
-      offref: (_event: string, ref: () => void) => { ref(); }
+      // Mirrors the real signature: on() hands back a reference and offref() accepts only that.
+      offref: (ref: () => void) => { ref(); }
     },
     create: async (_p: string, text: string) => { state.writeCalls++; state.content = text; }
   };

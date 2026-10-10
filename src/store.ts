@@ -8,6 +8,7 @@ import type { BackupStore } from './storage/backup';
 import { ensureDefaultTracker } from './parser';
 import { calculateStreak } from './streak';
 import { DEFAULT_HABITS_FILE } from './types';
+import { colourFor, SYNTHESISED_ICON } from './storage/format';
 
 interface ChangePayload {
   type: 'toggle' | 'addHabit' | 'deleteHabit' | 'renameHabit' | 'colorChange' | 'viewChange' | 'monthChange' | 'yearChange' | 'load' | 'reorder';
@@ -272,6 +273,31 @@ export function deleteHabit(habitName: string, keepData?: boolean) {
     deletedHabits: newDeletedHabits
   }), { type: 'deleteHabit', habitName });
   requestSave([]);
+}
+
+export function restoreHabit(name: string): void {
+  const current = getState();
+  if (current.habits.some(h => h.name === name)) return;
+  const archived = (current.deletedHabits ?? []).find(d => d.name === name);
+  if (!archived) return;
+  // The archive kept every cell, which is what makes restoring without losing history possible at all.
+  const cells = { ...(current.completions[name] ?? {}) };
+  const habit: Habit = {
+    name, icon: SYNTHESISED_ICON, frequency: 'daily', streakMode: 'strict',
+    startDate: Object.keys(cells).sort()[0] ?? new Date().toISOString().split('T')[0],
+    color: colourFor(name)
+  };
+  const newHabits = [...current.habits, habit];
+  const newCompletions = { ...current.completions, [name]: cells };
+  requestSave(Object.keys(cells));
+  // A restored habit arrives with a full definition of its own, so it is not listed as needing one.
+  setState(s => ({
+    ...s,
+    habits: newHabits,
+    completions: newCompletions,
+    deletedHabits: (s.deletedHabits ?? []).filter(d => d.name !== name),
+    pendingData: (s.pendingData ?? []).filter(n => n !== name)
+  }));
 }
 
 export function setHabitColor(habitName: string, color: string) {
