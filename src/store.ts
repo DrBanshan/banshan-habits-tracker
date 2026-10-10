@@ -3,6 +3,7 @@ import type { Habit, CompletionMap, StreakInfo, CompletionStatus, ViewType, AppS
 import type { TrackerDoc, TrackerErrorKind } from './model/tracker';
 import { emptyDoc, normalizeDoc } from './model/tracker';
 import { readDoc, saveDoc } from './storage/vaultFile';
+import { enqueue, hasPending, whenIdle } from './storage/writeQueue';
 import { ensureDefaultTracker } from './parser';
 import { calculateStreak } from './streak';
 import { DEFAULT_HABITS_FILE } from './types';
@@ -305,9 +306,25 @@ function currentDoc(): TrackerDoc {
 
 function requestSave(changedDates: string[]): void {
   if (!appRef) return;
-  void saveNow(changedDates).catch(e => {
-    console.warn('[HabitTracker] save failed', e);
-  });
+  for (const date of changedDates) pendingDates.add(date);
+  void enqueue(habitsFilePath, 'save', async () => {
+    // Snapshot at flush time, not at request time: that is what lets a burst coalesce onto the
+    // newest state instead of each request carrying a stale copy of the document.
+    const dates = [...pendingDates];
+    pendingDates.clear();
+    await saveNow(dates);
+  }).catch(() => { /* surfaced by saveNow */ });
+}
+
+const pendingDates = new Set<string>();
+
+/** Resolves once no write is queued or running for the data file. */
+export function whenSaved(): Promise<void> {
+  return whenIdle(habitsFilePath);
+}
+
+export function isSaving(): boolean {
+  return hasPending(habitsFilePath);
 }
 
 async function saveNow(changedDates: string[]): Promise<void> {

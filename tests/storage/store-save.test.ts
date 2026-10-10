@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { addHabit, deleteHabit, getState, init, loadHabits, renameHabit, toggleDay } from '../../src/store';
+import { addHabit, deleteHabit, getState, init, loadHabits, renameHabit, toggleDay, whenSaved } from '../../src/store';
 import { serialize } from '../../src/storage/serialize';
 import { emptyDoc, normalizeDoc } from '../../src/model/tracker';
 import { fakeApp } from './helpers';
@@ -28,9 +28,7 @@ afterEach(() => {
 });
 
 async function settled(): Promise<void> {
-  // One macrotask flush is enough while saves are awaited inside requestSave's own promise chain.
-  await new Promise(resolve => setTimeout(resolve, 0));
-  await new Promise(resolve => setTimeout(resolve, 0));
+  await whenSaved();
 }
 
 describe('store saves', () => {
