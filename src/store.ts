@@ -1,7 +1,9 @@
 import type { App } from 'obsidian';
-import type { Tracker, Habit, CompletionMap, StreakInfo, CompletionStatus, ViewType, AppState } from './types';
-import type { TrackerErrorKind } from './model/tracker';
-import { parseTrackerFile, writeTrackerFile, ensureDefaultTracker, lintHabitsFile, isTFile } from './parser';
+import type { Habit, CompletionMap, StreakInfo, CompletionStatus, ViewType, AppState } from './types';
+import type { TrackerDoc, TrackerErrorKind } from './model/tracker';
+import { emptyDoc, normalizeDoc } from './model/tracker';
+import { readDoc, saveDoc } from './storage/vaultFile';
+import { ensureDefaultTracker } from './parser';
 import { calculateStreak } from './streak';
 import { DEFAULT_HABITS_FILE } from './types';
 
@@ -29,6 +31,13 @@ export function takeNotices(): { kind: TrackerErrorKind; message: string }[] {
   const out = notices;
   notices = [];
   return out;
+}
+
+/** The last document the file was known to hold; the gate never lets a write fall behind it. */
+let lastGoodDoc: TrackerDoc | null = null;
+
+export function getLastGoodDoc(): TrackerDoc | null {
+  return lastGoodDoc ? normalizeDoc({ ...lastGoodDoc }) : null;
 }
 
 let state: AppState = {
@@ -63,6 +72,9 @@ export function init(app: App, filePath?: string, todayViewDays?: number, keepDe
   if (filePath) {
     habitsFilePath = filePath;
     state.habitsFilePath = filePath;
+    // A different file has a different last-known-good document; keeping the old one would make
+    // the gate compare against unrelated data.
+    lastGoodDoc = null;
   }
   if (todayViewDays) {
     state.todayViewDays = todayViewDays;
@@ -91,68 +103,38 @@ export function subscribe(fn: Listener) {
   return () => { listeners = listeners.filter(l => l !== fn); };
 }
 
-export async function loadHabits() {
+export async function loadHabits(): Promise<void> {
   if (!appRef) return;
-  setState(s => ({ ...s, loading: true, error: null }));
-  try {
-    // Lint first: remove empty month sections before parsing
-    try {
-      const linted = await lintHabitsFile(appRef, habitsFilePath);
-      if (isDebug()) console.log('[HabitTracker] Lint result:', linted);
-    } catch (e) {
-      console.warn('[HabitTracker] Lint failed:', e);
-    }
-
-    let content: string;
-    const existing = appRef.vault.getAbstractFileByPath(habitsFilePath);
-    if (isTFile(existing)) {
-      // File exists in vault index - read and parse it
-      content = await appRef.vault.read(existing);
-    } else {
-      // File not in vault index - try to read directly via adapter
-      // (bypasses vault index which may not have caught up yet)
-      try {
-        content = await appRef.vault.adapter.read(habitsFilePath);
-      } catch {
-        // File truly doesn't exist - create default tracker
-        const result = await ensureDefaultTracker(appRef, habitsFilePath);
-        if (!result) {
-          throw new Error(`Failed to create default tracker at: ${habitsFilePath}`);
-        }
-        content = result.content;
-      }
-    }
-    // Parse the content
-    const tracker = parseTrackerFile(content);
-    if (!tracker) {
-      throw new Error(`Failed to parse tracker file: ${habitsFilePath}`);
-    }
-    const streaks: Record<string, StreakInfo> = {};
-    for (const habit of tracker.habits) {
-      streaks[habit.name] = calculateStreak(habit, tracker.completions);
-    }
-    const selectedHabit = tracker.habits.length > 0 ? tracker.habits[0].name : null;
-    const deletedHabits = tracker.deletedHabits || [];
-
-    setState(s => ({
-      ...s,
-      habits: tracker.habits,
-      completions: tracker.completions,
-      streaks,
-      selectedHabit,
-      loading: false,
-      deletedHabits,
-      keepDeletedData: s.keepDeletedData !== undefined ? s.keepDeletedData : true,
-      emptyTableDetection: s.emptyTableDetection || 'onload'
-    }));
-  } catch (e) {
-    setState(s => ({
-      ...s,
-      loading: false,
-      error: e instanceof Error ? e.message : 'Unknown error'
-    }));
+  setState(s => ({ ...s, loading: true, error: null, errorInfo: null }));
+  let out = await readDoc(appRef, habitsFilePath);
+  if (!out.ok && out.error?.kind === 'file-missing-uncreatable') {
+    // First run for this path: seed the file the plugin has always created, then read it back.
+    await ensureDefaultTracker(appRef, habitsFilePath);
+    out = await readDoc(appRef, habitsFilePath);
   }
+  if (!out.ok || !out.doc) {
+    setState(s => ({ ...s, loading: false, errorInfo: out.error ?? null, error: out.error?.message ?? 'Unknown error' }));
+    return;
+  }
+  const doc = out.doc;
+  lastGoodDoc = doc;
+  const streaks: Record<string, StreakInfo> = {};
+  for (const habit of doc.habits) streaks[habit.name] = calculateStreak(habit, doc.completions);
+  setState(s => ({
+    ...s,
+    habits: doc.habits,
+    completions: doc.completions,
+    streaks,
+    selectedHabit: doc.habits.length > 0 ? doc.habits[0].name : null,
+    loading: false,
+    errorInfo: null,
+    deletedHabits: doc.deletedHabits,
+    needsDefinition: doc.needsDefinition,
+    pendingData: doc.pendingData
+  }));
+  void flushNotices();
 }
+
 
 export function toggleDay(habitName: string, date: string) {
   const current = getState();
@@ -172,7 +154,7 @@ export function toggleDay(habitName: string, date: string) {
     habitName,
     date
   });
-  void persist(newCompletions, current.habits, date).catch(() => { /* handled in persist */ });
+  requestSave([date]);
 }
 
 export function addHabit(habit: Habit) {
@@ -190,7 +172,7 @@ export function addHabit(habit: Habit) {
     streaks: newStreaks,
     selectedHabit: habit.name
   }));
-  void persist(newCompletions, newHabits);
+  requestSave([]);
 }
 
 export function renameHabit(oldName: string, newName: string) {
@@ -212,7 +194,7 @@ export function renameHabit(oldName: string, newName: string) {
     streaks: newStreaks,
     selectedHabit: s.selectedHabit === oldName ? newName : s.selectedHabit
   }));
-  void persist(newCompletions, newHabits);
+  requestSave([]);
 }
 
 export function deleteHabit(habitName: string, keepData?: boolean) {
@@ -228,7 +210,7 @@ export function deleteHabit(habitName: string, keepData?: boolean) {
     // Keep the completion data but remove habit from active list
     newCompletions = { ...current.completions };
     newStreaks = { ...current.streaks };
-    newDeletedHabits.push({ name: habitName, deletedAt: new Date().toISOString() });
+    newDeletedHabits.push({ name: habitName, deletedAt: new Date().toISOString().split('T')[0] });
   } else {
     // Delete everything
     newCompletions = { ...current.completions };
@@ -245,14 +227,14 @@ export function deleteHabit(habitName: string, keepData?: boolean) {
     selectedHabit: s.selectedHabit === habitName ? (newHabits.length > 0 ? newHabits[0].name : null) : s.selectedHabit,
     deletedHabits: newDeletedHabits
   }), { type: 'deleteHabit', habitName });
-  void persist(newCompletions, newHabits);
+  requestSave([]);
 }
 
 export function setHabitColor(habitName: string, color: string) {
   const current = getState();
   const newHabits = current.habits.map(h => h.name === habitName ? { ...h, color } : h);
   setState(s => ({ ...s, habits: newHabits }));
-  void persist(current.completions, newHabits);
+  requestSave([]);
 }
 
 export function setViewType(viewType: ViewType) {
@@ -306,24 +288,52 @@ export function reorderHabits(fromIndex: number, toIndex: number) {
   newHabits.splice(toIndex, 0, moved);
   // Notify without triggering a full re-render — the view handles DOM reordering directly
   setState(s => ({ ...s, habits: newHabits }), { type: 'reorder' });
-  void persist(current.completions, newHabits);
+  requestSave([]);
 }
 
-async function persist(completions: CompletionMap, habits: Habit[], affectedDate?: string) {
+function currentDoc(): TrackerDoc {
+  const s = getState();
+  return normalizeDoc({
+    ...(lastGoodDoc ?? emptyDoc()),
+    habits: s.habits,
+    completions: s.completions,
+    deletedHabits: s.deletedHabits ?? [],
+    needsDefinition: s.needsDefinition ?? [],
+    pendingData: s.pendingData ?? []
+  });
+}
+
+function requestSave(changedDates: string[]): void {
   if (!appRef) return;
-  if (isDebug()) console.log('[HabitTracker] persist called, date=' + (affectedDate || 'none'));
-  const current = getState();
-  const filterEmptyMonths = current.emptyTableDetection === 'onchange';
-  const tracker: Tracker = {
-    name: 'My Habits',
-    created: new Date().toISOString().split('T')[0],
-    habits,
-    completions
-  };
-  try {
-    await writeTrackerFile(appRef, habitsFilePath, tracker, undefined, filterEmptyMonths, affectedDate);
-  } catch (e) {
-    console.error('[HabitTracker] persist error:', e);
-    setState(s => ({ ...s, error: e instanceof Error ? e.message : 'Failed to save' }));
+  void saveNow(changedDates).catch(e => {
+    console.warn('[HabitTracker] save failed', e);
+  });
+}
+
+async function saveNow(changedDates: string[]): Promise<void> {
+  if (!appRef) return;
+  const changedMonths = changedDates.length > 0 ? new Set(changedDates.map(d => d.slice(0, 7))) : undefined;
+  // The document being saved is the baseline: the file must not lose what it claims. A caller that
+  // knows nothing was meant to move (a reload merge, a restore) passes the older document explicitly.
+  const out = await saveDoc(appRef, habitsFilePath, currentDoc(), { changedMonths });
+  if (out.ok) {
+    if (out.doc) lastGoodDoc = out.doc;
+    return;
+  }
+  if (out.error) {
+    setState(s => ({ ...s, errorInfo: out.error ?? null, error: out.error?.message ?? 'Failed to save' }));
+    console.warn(`[HabitTracker] ${out.error.kind}: ${out.error.message}`);
   }
 }
+
+async function flushNotices(): Promise<void> {
+  const pending = takeNotices();
+  if (pending.length === 0) return;
+  try {
+    const { Notice } = await import('obsidian');
+    for (const n of pending) new Notice(n.message, 6000);
+  } catch {
+    // A Notice is a courtesy; the state already carries what the view needs.
+  }
+}
+

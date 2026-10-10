@@ -132,6 +132,9 @@ export function diffDocs(intended: TrackerDoc, actual: TrackerDoc): DocDiff {
   for (const [name, cells] of Object.entries(intended.completions)) {
     const actualCells = owns(actual.completions, name) ? actual.completions[name] : undefined;
     for (const [date, status] of Object.entries(cells)) {
+      // An unmarked day carries no data, and the writer deliberately emits no cell for one, so it
+      // must not read as a loss: that would refuse every toggle that turns a day off.
+      if (status === 'unmarked') continue;
       if (actualCells?.[date] !== status) {
         lostCompletions.push({ habit: name, date, status });
       }

@@ -1,6 +1,8 @@
 export type Frequency = 'daily' | 'weekly' | 'specific';
 export type StreakMode = 'strict' | 'forgiving';
 export type CompletionStatus = 'completed' | 'missed' | 'unmarked';
+import type { TrackerError } from './model/tracker';
+
 export type ViewType = 'dashboard' | 'today' | 'month' | 'year' | 'yearOverview';
 
 export interface Habit {
@@ -53,6 +55,12 @@ export interface AppState {
   emptyTableDetection?: 'onload' | 'onchange';
   /** Whether to print debug messages to the console */
   debugMode?: boolean;
+  /** What the storage layer last refused, so the UI can offer the right way out. */
+  errorInfo?: TrackerError | null;
+  /** Habits merged in from a table row only; the UI asks the user to confirm their details. */
+  needsDefinition?: string[];
+  /** Completions held for a name that has no definition anywhere. */
+  pendingData?: string[];
 }
 
 export const DEFAULT_HABITS_FILE = 'habits.md';

@@ -97,6 +97,44 @@ describe('assertInvariants', () => {
 });
 
 describe('diffDocs', () => {
+  it('does not count an unmarked cell as data the file must carry', () => {
+    const intended = normalizeDoc({
+      ...emptyDoc(), habits: [habit('Read')],
+      completions: { Read: { '2026-10-01': 'unmarked' as const, '2026-10-02': 'completed' as const } }
+    });
+    // The writer emits no cell for an unmarked day, which is the whole point of the glyph set.
+    const written = normalizeDoc({
+      ...emptyDoc(), habits: [habit('Read')], completions: { Read: { '2026-10-02': 'completed' as const } }
+    });
+    expect(diffDocs(intended, written).lostCompletions).toEqual([]);
+  });
+
+  it('does not count an unmarked cell as data the file must carry', () => {
+    const intended = normalizeDoc({
+      ...emptyDoc(), habits: [habit('Read')],
+      completions: { Read: { '2026-10-01': 'unmarked' as const, '2026-10-02': 'completed' as const } }
+    });
+    // The writer emits no cell for an unmarked day, which is the whole point of the glyph set.
+    const written = normalizeDoc({
+      ...emptyDoc(), habits: [habit('Read')],
+      completions: { Read: { '2026-10-02': 'completed' as const } }
+    });
+    expect(diffDocs(intended, written).lostCompletions).toEqual([]);
+  });
+
+  it('still reports a completed cell that went missing', () => {
+    const intended = normalizeDoc({
+      ...emptyDoc(), habits: [habit('Read')],
+      completions: { Read: { '2026-10-02': 'completed' as const } }
+    });
+    const written = normalizeDoc({ ...emptyDoc(), habits: [habit('Read')], completions: { Read: {} } });
+    expect(diffDocs(intended, written).lostCompletions).toEqual([
+      { habit: 'Read', date: '2026-10-02', status: 'completed' }
+    ]);
+  });
+});
+
+describe('unused-diffDocs-old', () => {
   it('reports habits and completions that disappeared', () => {
     const before = normalizeDoc({
       ...emptyDoc(), habits: [habit('Read'), habit('Run')],
