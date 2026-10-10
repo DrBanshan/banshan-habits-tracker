@@ -26,6 +26,17 @@ describe('normalizeDoc', () => {
     expect(out.completions.Old).toBeDefined();
   });
 
+  it('keeps the rows of a deleted habit that still has a table row', () => {
+    const doc = {
+      ...emptyDoc(), habits: [habit('Read')],
+      completions: { Old: { '2026-10-01': 'completed' as const } },
+      deletedHabits: [{ name: 'Old', deletedAt: '2026-09-01' }]
+    };
+    const out = normalizeDoc(doc);
+    expect(out.completions.Old).toEqual({ '2026-10-01': 'completed' });
+    expect(out.pendingData).toEqual([]);
+  });
+
   it('keeps a completions row named after an Object.prototype member', () => {
     const doc = {
       ...emptyDoc(), habits: [] as Habit[],

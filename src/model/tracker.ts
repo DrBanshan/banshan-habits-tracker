@@ -78,7 +78,11 @@ export function normalizeDoc(doc: TrackerDoc): TrackerDoc {
   for (const h of doc.habits) completions[h.name] = { ...(owns(doc.completions, h.name) ? doc.completions[h.name] : {}) };
   const pendingData = [...doc.pendingData];
   for (const d of doc.deletedHabits) {
-    if (!owns(completions, d.name)) completions[d.name] = {};
+    // A deleted habit keeps its rows so its history stays recoverable: seed from what is
+    // already held for it instead of blanking it out.
+    if (!owns(completions, d.name)) {
+      completions[d.name] = { ...(owns(doc.completions, d.name) ? doc.completions[d.name] : {}) };
+    }
   }
   for (const [name, cells] of Object.entries(doc.completions)) {
     if (owns(completions, name)) continue;
