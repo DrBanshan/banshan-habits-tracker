@@ -4,6 +4,7 @@ import type { TrackerDoc, TrackerErrorKind } from './model/tracker';
 import { emptyDoc, normalizeDoc } from './model/tracker';
 import { readDoc, saveDoc } from './storage/vaultFile';
 import { enqueue, hasPending, whenIdle } from './storage/writeQueue';
+import type { BackupStore } from './storage/backup';
 import { ensureDefaultTracker } from './parser';
 import { calculateStreak } from './streak';
 import { DEFAULT_HABITS_FILE } from './types';
@@ -39,6 +40,48 @@ let lastGoodDoc: TrackerDoc | null = null;
 
 export function getLastGoodDoc(): TrackerDoc | null {
   return lastGoodDoc ? normalizeDoc({ ...lastGoodDoc }) : null;
+}
+
+let backupHost: { backups: BackupStore } | null = null;
+let backedUpThisSession = false;
+
+/** Handed the plugin once, so the store can reach the backup rotation without importing main.ts. */
+export function setPlugin(host: { backups: BackupStore } | null): void {
+  backupHost = host;
+  backedUpThisSession = false;
+}
+
+// A copy is only worth rotating in if it could actually be restored: frontmatter first, then a table.
+const BACKUP_ELIGIBLE = /^---\r?\n[\s\S]*?\r?\n---/;
+
+async function recordBackup(previous: string, changedMonths: Set<string> | undefined): Promise<void> {
+  if (!backupHost) return;
+  if (backedUpThisSession && changedMonths !== undefined) return;   // first write of the session, or a full rewrite
+  if (!BACKUP_ELIGIBLE.test(previous)) return;
+  await backupHost.backups.record(previous);
+  backedUpThisSession = true;
+}
+
+/** Put a kept copy back and re-read it, for recovering from a write that lost data. */
+export async function restoreFromBackup(stamp: string): Promise<void> {
+  if (!appRef) return;
+  const content = await backupHost?.backups.take(stamp);
+  if (content === null) {
+    notices.push({ kind: 'file-missing-uncreatable', message: 'That backup is no longer available.' });
+    return;
+  }
+  try {
+    const abstract = appRef.vault.getAbstractFileByPath(habitsFilePath);
+    if (abstract) {
+      await appRef.vault.modify(abstract as Parameters<App['vault']['modify']>[0], content);
+    } else {
+      await appRef.vault.adapter.write(habitsFilePath, content);
+    }
+  } catch (e) {
+    notices.push({ kind: 'write-failed', message: e instanceof Error ? e.message : 'the vault refused the restore' });
+    return;
+  }
+  await loadHabits();
 }
 
 let state: AppState = {
@@ -332,7 +375,10 @@ async function saveNow(changedDates: string[]): Promise<void> {
   const changedMonths = changedDates.length > 0 ? new Set(changedDates.map(d => d.slice(0, 7))) : undefined;
   // The document being saved is the baseline: the file must not lose what it claims. A caller that
   // knows nothing was meant to move (a reload merge, a restore) passes the older document explicitly.
-  const out = await saveDoc(appRef, habitsFilePath, currentDoc(), { changedMonths });
+  const out = await saveDoc(appRef, habitsFilePath, currentDoc(), {
+    changedMonths,
+    record: (prev) => recordBackup(prev, changedMonths)
+  });
   if (out.ok) {
     if (out.doc) lastGoodDoc = out.doc;
     return;

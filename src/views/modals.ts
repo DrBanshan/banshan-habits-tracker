@@ -243,3 +243,35 @@ export class DeleteHabitModal extends Modal {
       .addButton(btn => btn.setButtonText('Cancel').onClick(() => this.close()));
   }
 }
+
+/**
+ * Lists the rotating copies of the data file and restores the one picked. Reached from the command
+ * palette and from the failure card, so it has to work when the data file is currently unusable.
+ */
+export class RestoreDataFileModal extends Modal {
+  constructor(private plugin: HabitTrackerPlugin, private onPick: (stamp: string) => Promise<void>) {
+    super(plugin.app);
+  }
+
+  onOpen(): void {
+    const { contentEl } = this;
+    contentEl.empty();
+    contentEl.createEl('h2', { text: 'Restore previous data file' });
+    void (async () => {
+      const list = await this.plugin.backups.list();
+      if (list.length === 0) {
+        contentEl.createEl('p', { text: 'No previous copies have been kept yet.' });
+        return;
+      }
+      contentEl.createEl('p', { text: 'Newest first. Restoring replaces the data file with the copy you pick.' });
+      for (const entry of list) {
+        const row = contentEl.createDiv({ cls: 'backup-row' });
+        // The stamp is itself a timestamp, so it still reads when a stored copy has no usable time.
+        const label = entry.at ? new Date(entry.at).toLocaleString() : entry.stamp;
+        row.createEl('button', { cls: 'backup-restore-button', text: label })
+          .addEventListener('click', () => { void this.onPick(entry.stamp).then(() => this.close()); });
+        row.createEl('span', { text: `${entry.bytes} bytes`, cls: 'backup-size' });
+      }
+    })();
+  }
+}

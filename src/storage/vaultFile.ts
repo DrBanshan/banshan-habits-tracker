@@ -10,6 +10,11 @@ export interface SaveOptions {
   /** The document the gate must not let this write fall behind, usually last-known-good state. */
   protectAgainst?: TrackerDoc;
   onNotice?: (kind: TrackerErrorKind, message: string) => void;
+  /**
+   * Called with the text about to be overwritten, immediately before the write, so the caller can
+   * rotate a copy into the backup rotation. Best-effort: failing here must not lose the save.
+   */
+  record?: (previous: string) => Promise<void>;
 }
 
 export interface FileResult {
@@ -94,6 +99,11 @@ export async function saveDoc(app: App, path: string, doc: TrackerDoc, options: 
   // accepts for that path, whether or not the vault had to be asked to store it.
   lastWritten.set(path, hash32(content));
   if (content === existing) return { ok: true, doc, acceptedContent: content };
+
+  // Rotated against the text about to be replaced, and only for a write that really changes it.
+  if (options.record && existing !== null) {
+    await options.record(existing).catch(() => { /* best-effort: a failed rotation must not lose the save */ });
+  }
 
   try {
     const abstract = app.vault.getAbstractFileByPath(path);

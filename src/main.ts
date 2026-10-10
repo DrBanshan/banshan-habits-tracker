@@ -1,7 +1,9 @@
 import { App, Plugin, PluginSettingTab, Setting } from 'obsidian';
 import { HabitTrackerView, VIEW_TYPE_HABIT_TRACKER } from './view';
-import { init, loadHabits, toggleDay, addHabit, renameHabit, deleteHabit, setHabitColor, setViewType, setSelectedHabit, setSelectedMonth, setSelectedYear, getState, reorderHabits, updateSettings } from './store';
+import { init, loadHabits, toggleDay, addHabit, renameHabit, deleteHabit, setHabitColor, setViewType, setSelectedHabit, setSelectedMonth, setSelectedYear, getState, reorderHabits, updateSettings, setPlugin, restoreFromBackup } from './store';
+import { RestoreDataFileModal } from './views/modals';
 import { DEFAULT_HABITS_FILE } from './types';
+import { BackupStore } from './storage/backup';
 import type { Habit, ViewType, Frequency, StreakMode } from './types';
 
 interface PluginSettings {
@@ -16,10 +18,14 @@ const DEFAULT_SETTINGS: PluginSettings = { habitsFilePath: DEFAULT_HABITS_FILE, 
 
 export default class HabitTrackerPlugin extends Plugin {
   settings!: PluginSettings;
+  backups!: BackupStore;
 
   async onload(): Promise<void> {
     console.log('[HabitTracker] Loading plugin...');
     try {
+      // First, so anything reading the blob during load sees a store that exists.
+      this.backups = new BackupStore(() => this.readBlob(), async (d) => { await this.writeBlob(d); });
+      setPlugin(this);
       await this.loadSettings();
       console.log('[HabitTracker] Settings loaded');
 
@@ -43,12 +49,23 @@ export default class HabitTrackerPlugin extends Plugin {
       });
       console.log('[HabitTracker] Command added');
 
+      this.addCommand({
+        id: 'restore-data-file',
+        name: 'Restore previous data file',
+        callback: () => this.openRestoreBackupModal()
+      });
+
       this.addSettingTab(new HabitTrackerSettingTab(this.app, this));
       console.log('[HabitTracker] Settings tab added');
     } catch (error) {
       console.error('[HabitTracker] Failed to load:', error);
       throw error;
     }
+  }
+
+  /** The way back to a kept copy, shared by the command palette and the failure card. */
+  openRestoreBackupModal(): void {
+    new RestoreDataFileModal(this, async (stamp) => { await restoreFromBackup(stamp); }).open();
   }
 
   async activateView(): Promise<void> {
@@ -97,7 +114,21 @@ export default class HabitTrackerPlugin extends Plugin {
   }
 
   async saveSettings(): Promise<void> {
-    await super.saveData(this.settings);
+    await this.writeBlob({ ...this.settings });
+  }
+
+  /**
+   * The data blob holds the settings and the backup rotation, so both go through one accessor:
+   * saving settings as the whole blob would drop the `backups` key along with it.
+   */
+  async readBlob(): Promise<Record<string, unknown> | null> {
+    const raw = await this.loadData();
+    return typeof raw === 'object' && raw !== null ? raw as Record<string, unknown> : {};
+  }
+
+  async writeBlob(patch: Record<string, unknown>): Promise<void> {
+    const merged = { ...await this.readBlob(), ...patch };
+    await super.saveData(merged);
   }
 
   getState() { return getState(); }
