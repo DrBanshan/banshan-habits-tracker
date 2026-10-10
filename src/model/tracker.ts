@@ -106,6 +106,14 @@ export function assertInvariants(doc: TrackerDoc, where: string): void {
       if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
         throw new Error(`${where}: date key for "${name}" is not ISO YYYY-MM-DD: "${date}"`);
       }
+      // Shape alone lets 2026-99-99 through, and new Date() rolls such a value into a real day,
+      // so the parts have to be compared back. Checked here rather than through the format
+      // module so this file keeps importing nothing but types.
+      const [y, m, d] = date.split('-').map(Number);
+      const probe = new Date(y, m - 1, d);
+      if (probe.getFullYear() !== y || probe.getMonth() + 1 !== m || probe.getDate() !== d) {
+        throw new Error(`${where}: date key for "${name}" is not a real day: "${date}"`);
+      }
     }
   }
 }

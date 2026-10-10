@@ -1,5 +1,6 @@
 import type { App } from 'obsidian';
 import type { Tracker, Habit, CompletionMap, StreakInfo, CompletionStatus, ViewType, AppState } from './types';
+import type { TrackerErrorKind } from './model/tracker';
 import { parseTrackerFile, writeTrackerFile, ensureDefaultTracker, lintHabitsFile, isTFile } from './parser';
 import { calculateStreak } from './streak';
 import { DEFAULT_HABITS_FILE } from './types';
@@ -16,6 +17,19 @@ type Listener = (payload?: ChangePayload) => void;
 let appRef: App | null = null;
 let habitsFilePath: string = DEFAULT_HABITS_FILE;
 let listeners: Listener[] = [];
+
+// Deferred reports from the storage layer, shown once the store has finished loading.
+let notices: { kind: TrackerErrorKind; message: string }[] = [];
+
+export function reportDrift(healed: string[]): void {
+  notices.push({ kind: 'drift-healed', message: `${healed.length} habit(s) were present only as a table row: ${healed.join(', ')}` });
+}
+
+export function takeNotices(): { kind: TrackerErrorKind; message: string }[] {
+  const out = notices;
+  notices = [];
+  return out;
+}
 
 let state: AppState = {
   habits: [],

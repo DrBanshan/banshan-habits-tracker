@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { emptyDoc, normalizeDoc } from '../../src/model/tracker';
 import { deserialize } from '../../src/storage/deserialize';
 import { serialize } from '../../src/storage/serialize';
+import { saveDoc } from '../../src/storage/vaultFile';
+import { fakeApp } from './helpers';
 import type { TrackerDoc } from '../../src/model/tracker';
 import type { Habit } from '../../src/types';
 
@@ -55,7 +57,15 @@ describe('P4 deletedHabits', () => {
 
 /** The gate of Task 7: a refused write must leave the file untouched. */
 describe('gate', () => {
-  it.skip('refuses a write that would lose data and leaves the file byte-identical', async () => {
-    expect(true).toBe(false);
+  it('refuses a write that would lose data and leaves the file byte-identical', async () => {
+    const keep = docOf(['Read', 'Run'], { Read: { [TODAY]: 'completed' }, Run: { [TODAY]: 'completed' } });
+    const app = fakeApp(serialize(keep));
+    const before = app.content;
+    const lossy = normalizeDoc({ ...emptyDoc('Fitness'), created: '2026-10-01', habits: [habit('Read')], completions: { Read: {} } as never });
+    const out = await saveDoc(app.app as never, 'habits.md', lossy, { protectAgainst: keep });
+    expect(out.ok).toBe(false);
+    expect(out.error!.kind).toBe('write-aborted-safety');
+    expect(app.content).toBe(before);
+    expect(app.modifyCalls).toBe(0);
   });
 });

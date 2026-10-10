@@ -75,6 +75,21 @@ describe('assertInvariants', () => {
     expect(() => assertInvariants(doc, 'test')).toThrow(/Read/);
   });
 
+  it('rejects a shaped date key that is not a real day', () => {
+    const doc = normalizeDoc({ ...emptyDoc(), habits: [habit('Read')] });
+    doc.completions.Read['2026-02-29'] = 'completed';   // 2026 is not a leap year
+    expect(() => assertInvariants(doc, 'test')).toThrow(/not a real day/);
+    const other = normalizeDoc({ ...emptyDoc(), habits: [habit('Read')] });
+    other.completions.Read['2026-99-99'] = 'completed';
+    expect(() => assertInvariants(other, 'test')).toThrow(/not a real day/);
+  });
+
+  it('accepts a real leap day', () => {
+    const doc = normalizeDoc({ ...emptyDoc(), habits: [habit('Read')] });
+    doc.completions.Read['2024-02-29'] = 'completed';
+    expect(() => assertInvariants(doc, 'test')).not.toThrow();
+  });
+
   it('rejects a habit named after an Object.prototype member with no own entry', () => {
     const doc = { ...emptyDoc(), habits: [habit('toString')], completions: {} };
     expect(() => assertInvariants(doc, 'test')).toThrow(/has no completions entry/);
