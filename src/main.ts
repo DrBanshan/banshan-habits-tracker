@@ -5,17 +5,23 @@ import { startWatcher } from './storage/vaultFile';
 import { RestoreDataFileModal, RestoreDeletedHabitModal } from './views/modals';
 import { DEFAULT_HABITS_FILE } from './types';
 import { BackupStore } from './storage/backup';
-import type { Habit, ViewType, Frequency, StreakMode } from './types';
+import type { Habit, ViewType, Frequency, StreakMode, EmptyTableDetection } from './types';
+import { lintHabitsFile } from './parser';
+import { Notice } from 'obsidian';
 
 interface PluginSettings {
   habitsFilePath: string;
   todayViewDays: number;
   keepDeletedData: boolean;
-  emptyTableDetection: 'onload' | 'onchange';
+  emptyTableDetection: EmptyTableDetection;
   debugMode: boolean;
 }
 
-const DEFAULT_SETTINGS: PluginSettings = { habitsFilePath: DEFAULT_HABITS_FILE, todayViewDays: 7, keepDeletedData: true, emptyTableDetection: 'onload', debugMode: false };
+const EMPTY_TABLE_MODES: EmptyTableDetection[] = ['onload', 'onchange', 'manual'];
+
+// 'manual' for fresh installs: the canonical writer leaves out data-less sections, so nothing has to
+// rewrite the file on load. A user who already chose a mode keeps the value they stored.
+const DEFAULT_SETTINGS: PluginSettings = { habitsFilePath: DEFAULT_HABITS_FILE, todayViewDays: 7, keepDeletedData: true, emptyTableDetection: 'manual', debugMode: false };
 
 export default class HabitTrackerPlugin extends Plugin {
   settings!: PluginSettings;
@@ -65,6 +71,18 @@ export default class HabitTrackerPlugin extends Plugin {
         name: 'Restore deleted habit',
         callback: () => {
           new RestoreDeletedHabitModal(this, async () => { this.refreshView(); }).open();
+        }
+      });
+
+      this.addCommand({
+        id: 'clean-empty-sections',
+        name: 'Clean empty month sections',
+        callback: () => {
+          void (async () => {
+            const removed = await lintHabitsFile(this.app, this.settings.habitsFilePath);
+            new Notice(removed ? 'Removed empty month sections' : 'No empty month sections found', 4000);
+            await this.loadHabits();
+          })();
         }
       });
 
@@ -121,7 +139,9 @@ export default class HabitTrackerPlugin extends Plugin {
       habitsFilePath: safe.habitsFilePath || DEFAULT_HABITS_FILE,
       todayViewDays: safe.todayViewDays ?? 7,
       keepDeletedData: safe.keepDeletedData ?? true,
-      emptyTableDetection: safe.emptyTableDetection ?? 'onload',
+      emptyTableDetection: EMPTY_TABLE_MODES.includes(safe.emptyTableDetection as EmptyTableDetection)
+        ? (safe.emptyTableDetection as EmptyTableDetection)
+        : 'onload',
       debugMode: safe.debugMode ?? false
     };
   }
@@ -237,13 +257,14 @@ class HabitTrackerSettingTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName('Empty table detection')
-      .setDesc('On the fly → filters empty tables on every data change; Once upon reloading → only cleans up when plugin reloads (better performance)')
+      .setDesc('On the fly → filters empty tables on every data change; Once upon reloading → only cleans up when plugin reloads (better performance); Manually → nothing is removed until you run Clean empty month sections')
       .addDropdown(dd => dd
         .addOption('onchange', 'On the fly')
         .addOption('onload', 'Once upon reloading')
+        .addOption('manual', 'Manually')
         .setValue(this.plugin.settings.emptyTableDetection)
         .onChange(async (value) => {
-          const detectionValue = value as 'onload' | 'onchange';
+          const detectionValue = value as EmptyTableDetection;
           this.plugin.settings.emptyTableDetection = detectionValue;
           await this.plugin.saveSettings();
           updateSettings(undefined, undefined, detectionValue);

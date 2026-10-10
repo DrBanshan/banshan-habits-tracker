@@ -51,6 +51,9 @@ export async function readTrackerFile(app: App, path: string): Promise<Tracker |
  * Returns true if the file was modified.
  */
 export async function lintHabitsFile(app: App, path: string): Promise<boolean> {
+  // Brought in lazily: store.ts already imports from this module, and a static edge back would close
+  // that into a cycle at module-evaluation time.
+  const { isDebug } = await import('./store');
   let content: string;
   // Try vault read first (Obsidian-indexed), fall back to adapter (raw filesystem)
   const file = app.vault.getAbstractFileByPath(path);
@@ -101,7 +104,7 @@ export async function lintHabitsFile(app: App, path: string): Promise<boolean> {
       }
     }
 
-    console.log('[HabitTracker] Lint: section=' + sectionHeaders[i].header + ' hasData=' + hasData);
+    if (isDebug()) console.log('[HabitTracker] Lint: section=' + sectionHeaders[i].header + ' hasData=' + hasData);
 
     if (!hasData) {
       sectionsToRemove.push(i);
@@ -132,7 +135,7 @@ export async function lintHabitsFile(app: App, path: string): Promise<boolean> {
   } else {
     await app.vault.adapter.write(path, newContent);
   }
-  console.log('[HabitTracker] Lint: removed ' + sectionsToRemove.length + ' empty month section(s)');
+  if (isDebug()) console.log('[HabitTracker] Lint: removed ' + sectionsToRemove.length + ' empty month section(s)');
   return true;
 }
 

@@ -1,11 +1,11 @@
 import type { App } from 'obsidian';
-import type { Habit, CompletionMap, StreakInfo, CompletionStatus, ViewType, AppState } from './types';
+import type { Habit, CompletionMap, StreakInfo, CompletionStatus, ViewType, AppState, EmptyTableDetection } from './types';
 import type { TrackerDoc, TrackerErrorKind } from './model/tracker';
 import { emptyDoc, normalizeDoc } from './model/tracker';
 import { readDoc, saveDoc } from './storage/vaultFile';
 import { enqueue, hasPending, whenIdle } from './storage/writeQueue';
 import type { BackupStore } from './storage/backup';
-import { ensureDefaultTracker } from './parser';
+import { ensureDefaultTracker, lintHabitsFile } from './parser';
 import { calculateStreak } from './streak';
 import { DEFAULT_HABITS_FILE } from './types';
 import { colourFor, SYNTHESISED_ICON } from './storage/format';
@@ -112,7 +112,7 @@ function setState(updater: (s: AppState) => AppState, payload?: ChangePayload) {
   notify(payload);
 }
 
-export function init(app: App, filePath?: string, todayViewDays?: number, keepDeletedData?: boolean, emptyTableDetection?: 'onload' | 'onchange', debugMode?: boolean) {
+export function init(app: App, filePath?: string, todayViewDays?: number, keepDeletedData?: boolean, emptyTableDetection?: EmptyTableDetection, debugMode?: boolean) {
   appRef = app;
   if (filePath) {
     habitsFilePath = filePath;
@@ -151,6 +151,11 @@ export function subscribe(fn: Listener) {
 export async function loadHabits(): Promise<void> {
   if (!appRef) return;
   setState(s => ({ ...s, loading: true, error: null, errorInfo: null }));
+  if (state.emptyTableDetection === 'onload') {
+    // Cleanup for a user who asked for it at load. Fresh installs get 'manual', where nothing here
+    // rewrites the file; the canonical writer already leaves out sections with no data.
+    await lintHabitsFile(appRef, habitsFilePath).catch(() => false);
+  }
   let out = await readDoc(appRef, habitsFilePath);
   if (!out.ok && out.error?.kind === 'file-missing-uncreatable') {
     // First run for this path: seed the file the plugin has always created, then read it back.
@@ -332,7 +337,7 @@ export function setHabitsFilePath(path: string) {
   setState(s => ({ ...s, habitsFilePath: path }));
 }
 
-export function updateSettings(todayViewDays?: number, keepDeletedData?: boolean, emptyTableDetection?: 'onload' | 'onchange', debugMode?: boolean) {
+export function updateSettings(todayViewDays?: number, keepDeletedData?: boolean, emptyTableDetection?: EmptyTableDetection, debugMode?: boolean) {
   if (todayViewDays !== undefined) {
     state.todayViewDays = todayViewDays;
   }

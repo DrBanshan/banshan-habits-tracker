@@ -4,6 +4,11 @@ export type CompletionStatus = 'completed' | 'missed' | 'unmarked';
 import type { TrackerError } from './model/tracker';
 
 export type ViewType = 'dashboard' | 'today' | 'month' | 'year' | 'yearOverview';
+/**
+ * How empty month sections are cleaned up. 'manual' is the default for fresh installs: the canonical
+ * writer already omits data-less sections, so nothing has to rewrite the file behind the user's back.
+ */
+export type EmptyTableDetection = 'onload' | 'onchange' | 'manual';
 
 export interface Habit {
   name: string;
@@ -51,8 +56,8 @@ export interface AppState {
   deletedHabits?: { name: string; deletedAt: string }[];
   /** Whether to keep data when deleting a habit */
   keepDeletedData?: boolean;
-  /** How to handle empty month tables: 'onload' only cleans on plugin load, 'onchange' filters on every data change */
-  emptyTableDetection?: 'onload' | 'onchange';
+  /** How to handle empty month tables; see EmptyTableDetection. */
+  emptyTableDetection?: EmptyTableDetection;
   /** Whether to print debug messages to the console */
   debugMode?: boolean;
   /** What the storage layer last refused, so the UI can offer the right way out. */
