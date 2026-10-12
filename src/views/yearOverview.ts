@@ -9,15 +9,15 @@ export function renderYearOverview(container: HTMLElement, plugin: HabitTrackerP
   const habit = habits.find(h => h.name === habitName);
   if (!habit) return;
 
-  const section = container.createEl('div', { cls: 'habit-section year-overview' });
+  const section = container.createDiv({ cls: 'habit-section year-overview' });
 
   
-  const header = section.createEl('div', { cls: 'year-overview-header' });
+  const header = section.createDiv({ cls: 'year-overview-header' });
 
-  const headerLeft = header.createEl('div', { cls: 'year-overview-header-left' });
-  headerLeft.createEl('div', { text: habitName, cls: 'habit-name' });
+  const headerLeft = header.createDiv({ cls: 'year-overview-header-left' });
+  headerLeft.createDiv({ text: habitName, cls: 'habit-name' });
 
-  const habitNav = headerLeft.createEl('div', { cls: 'habit-year-nav' });
+  const habitNav = headerLeft.createDiv({ cls: 'habit-year-nav' });
   const currentIndex = habits.indexOf(habit);
 
   const prevHabitBtn = habitNav.createEl('button', { text: '◀', cls: 'habit-nav-button' });
@@ -38,7 +38,7 @@ export function renderYearOverview(container: HTMLElement, plugin: HabitTrackerP
     }
   });
 
-  const yearSelector = header.createEl('div', { cls: 'github-year-selector' });
+  const yearSelector = header.createDiv({ cls: 'github-year-selector' });
   
   const earliestYear = getEarliestYearWithData(plugin, habitName);
   const startYear = Math.min(earliestYear, state.selectedYear);
@@ -57,10 +57,10 @@ export function renderYearOverview(container: HTMLElement, plugin: HabitTrackerP
     });
   }
 
-  const yearContainer = section.createEl('div', { cls: 'year-overview-container' });
+  const yearContainer = section.createDiv({ cls: 'year-overview-container' });
 
   
-  const yearGrid = yearContainer.createEl('div', { cls: 'year-overview-grid' });
+  const yearGrid = yearContainer.createDiv({ cls: 'year-overview-grid' });
 
   const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -68,10 +68,10 @@ export function renderYearOverview(container: HTMLElement, plugin: HabitTrackerP
   today.setHours(0, 0, 0, 0);
 
   for (let month = 0; month < 12; month++) {
-    const monthContainer = yearGrid.createEl('div', { cls: 'year-overview-month' });
+    const monthContainer = yearGrid.createDiv({ cls: 'year-overview-month' });
 
-    monthContainer.createEl('div', { text: monthNames[month], cls: 'year-overview-month-name' });
-    const monthDays = monthContainer.createEl('div', { cls: 'year-overview-days' });
+    monthContainer.createDiv({ text: monthNames[month], cls: 'year-overview-month-name' });
+    const monthDays = monthContainer.createDiv({ cls: 'year-overview-days' });
 
     const daysInMonth = new Date(state.selectedYear, month + 1, 0).getDate();
     const lastDay = daysInMonth;
@@ -82,7 +82,7 @@ export function renderYearOverview(container: HTMLElement, plugin: HabitTrackerP
     for (let day = 1; day <= lastDay; day++) {
       const currentDate = new Date(state.selectedYear, month, day);
       const dateStr = formatDate(currentDate);
-      const dayCell = monthDays.createEl('div', { cls: 'year-overview-day', attr: { 'data-date': dateStr, 'data-habit': habitName } });
+      const dayCell = monthDays.createDiv({ cls: 'year-overview-day', attr: { 'data-date': dateStr, 'data-habit': habitName } });
 
       const offset = startingDayOfWeek + (day - 1);
       const col = (offset % 7) + 1;

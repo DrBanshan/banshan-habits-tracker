@@ -32,22 +32,22 @@ export function renderDashboardView(container: HTMLElement, plugin: HabitTracker
   const bestHabit = [...stats].sort((a, b) => getRate(b.twentyOneDayDone, b.twentyOneDayTotal) - getRate(a.twentyOneDayDone, a.twentyOneDayTotal))[0];
   const weekdayStats = getWeekdayStats(habits, state.completions, today);
 
-  const section = container.createEl('div', { cls: 'dashboard-view' });
+  const section = container.createDiv({ cls: 'dashboard-view' });
 
-  const overview = section.createEl('div', { cls: 'dashboard-overview-panel' });
-  const header = overview.createEl('div', { cls: 'dashboard-header' });
-  const headerText = header.createEl('div', { cls: 'dashboard-date-card' });
-  headerText.createEl('div', { text: 'Current tracker', cls: 'dashboard-kicker' });
+  const overview = section.createDiv({ cls: 'dashboard-overview-panel' });
+  const header = overview.createDiv({ cls: 'dashboard-header' });
+  const headerText = header.createDiv({ cls: 'dashboard-date-card' });
+  headerText.createDiv({ text: 'Current tracker', cls: 'dashboard-kicker' });
   headerText.createEl('h2', { text: 'Dashboard', cls: 'dashboard-title' });
-  headerText.createEl('div', { text: formatLongDate(today), cls: 'dashboard-subtitle' });
+  headerText.createDiv({ text: formatLongDate(today), cls: 'dashboard-subtitle' });
 
-  const rings = header.createEl('div', { cls: 'dashboard-rings' });
+  const rings = header.createDiv({ cls: 'dashboard-rings' });
   renderProgressRing(rings, 'Today', todayDone, habits.length, 92);
   renderProgressRing(rings, '7 days', weekDone, weekTotal, 92);
   renderProgressRing(rings, '21 days', twentyOneDayDone, twentyOneDayTotal, 92);
   renderProgressRing(rings, 'Year', yearDone, yearTotal, 92);
 
-  const statGrid = overview.createEl('div', { cls: 'dashboard-stat-grid' });
+  const statGrid = overview.createDiv({ cls: 'dashboard-stat-grid' });
   renderMetric(statGrid, 'Habits', String(habits.length), 'Active habits in this tracker');
   renderMetric(statGrid, 'Active streaks', String(activeStreaks), 'Habits with a current streak');
   renderMetric(statGrid, 'Best habit', bestHabit ? bestHabit.habit.name : '-', bestHabit ? `${Math.round(getRate(bestHabit.twentyOneDayDone, bestHabit.twentyOneDayTotal))}% over 21 days` : 'No data');
@@ -55,28 +55,28 @@ export function renderDashboardView(container: HTMLElement, plugin: HabitTracker
   renderMetric(statGrid, 'Weakest weekday', weekdayStats.worst.label, `${weekdayStats.worst.done}/${weekdayStats.worst.total} completed`);
   renderMetric(statGrid, 'Today complete', `${todayDone}/${habits.length}`, todayStr);
 
-  const table = section.createEl('div', { cls: 'dashboard-table' });
-  const tableHeader = table.createEl('div', { cls: 'dashboard-table-row dashboard-table-header' });
+  const table = section.createDiv({ cls: 'dashboard-table' });
+  const tableHeader = table.createDiv({ cls: 'dashboard-table-row dashboard-table-header' });
   ['Habit', 'Today', '7 days', '21 days', 'Current', 'Best'].forEach((label, index) => {
-    tableHeader.createEl('div', { text: label, cls: index === 0 ? 'dashboard-sticky-cell' : undefined });
+    tableHeader.createDiv({ text: label, cls: index === 0 ? 'dashboard-sticky-cell' : undefined });
   });
 
   stats.forEach(stat => {
-    const row = table.createEl('div', { cls: 'dashboard-table-row' });
+    const row = table.createDiv({ cls: 'dashboard-table-row' });
     row.style.setProperty('--habit-color', stat.habit.color);
 
-    const habitCell = row.createEl('div', { cls: 'dashboard-habit-cell dashboard-sticky-cell' });
-    habitCell.createEl('span', { text: stat.habit.icon, cls: 'dashboard-habit-icon' });
-    habitCell.createEl('span', { text: stat.habit.name, cls: 'dashboard-habit-name' });
+    const habitCell = row.createDiv({ cls: 'dashboard-habit-cell dashboard-sticky-cell' });
+    habitCell.createSpan({ text: stat.habit.icon, cls: 'dashboard-habit-icon' });
+    habitCell.createSpan({ text: stat.habit.name, cls: 'dashboard-habit-name' });
 
-    row.createEl('div', {
+    row.createDiv({
       text: stat.todayDone ? 'Done' : 'Open',
       cls: stat.todayDone ? 'dashboard-status done' : 'dashboard-status open'
     });
     renderInlineRate(row, stat.weekDone, stat.weekTotal);
     renderInlineRate(row, stat.twentyOneDayDone, stat.twentyOneDayTotal);
-    row.createEl('div', { text: String(stat.currentStreak), cls: 'dashboard-number-cell' });
-    row.createEl('div', { text: String(stat.longestStreak), cls: 'dashboard-number-cell' });
+    row.createDiv({ text: String(stat.currentStreak), cls: 'dashboard-number-cell' });
+    row.createDiv({ text: String(stat.longestStreak), cls: 'dashboard-number-cell' });
   });
 }
 
@@ -85,18 +85,18 @@ function renderProgressRing(container: HTMLElement, label: string, done: number,
   const radius = 36;
   const circumference = 2 * Math.PI * radius;
 
-  const card = container.createEl('div', { cls: 'dashboard-ring-card' });
-  const svg = activeDocument.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  const card = container.createDiv({ cls: 'dashboard-ring-card' });
+  const svg = activeDocument.createSvg('svg');
   svg.setAttribute('viewBox', `0 0 ${size} ${size}`);
   svg.setAttribute('class', 'dashboard-ring');
 
-  const track = activeDocument.createElementNS('http://www.w3.org/2000/svg', 'circle');
+  const track = activeDocument.createSvg('circle');
   track.setAttribute('cx', String(size / 2));
   track.setAttribute('cy', String(size / 2));
   track.setAttribute('r', String(radius));
   track.setAttribute('class', 'dashboard-ring-track');
 
-  const value = activeDocument.createElementNS('http://www.w3.org/2000/svg', 'circle');
+  const value = activeDocument.createSvg('circle');
   value.setAttribute('cx', String(size / 2));
   value.setAttribute('cy', String(size / 2));
   value.setAttribute('r', String(radius));
@@ -108,21 +108,21 @@ function renderProgressRing(container: HTMLElement, label: string, done: number,
   svg.appendChild(value);
   card.appendChild(svg);
 
-  const text = card.createEl('div', { cls: 'dashboard-ring-text' });
-  text.createEl('div', { text: `${Math.round(percent)}%`, cls: 'dashboard-ring-percent' });
-  card.createEl('div', { text: label, cls: 'dashboard-ring-label' });
+  const text = card.createDiv({ cls: 'dashboard-ring-text' });
+  text.createDiv({ text: `${Math.round(percent)}%`, cls: 'dashboard-ring-percent' });
+  card.createDiv({ text: label, cls: 'dashboard-ring-label' });
 }
 
 function renderMetric(container: HTMLElement, label: string, value: string, detail: string): void {
-  const card = container.createEl('div', { cls: 'dashboard-metric' });
-  card.createEl('div', { text: label, cls: 'dashboard-metric-label' });
-  card.createEl('div', { text: value, cls: 'dashboard-metric-value' });
-  card.createEl('div', { text: detail, cls: 'dashboard-metric-detail' });
+  const card = container.createDiv({ cls: 'dashboard-metric' });
+  card.createDiv({ text: label, cls: 'dashboard-metric-label' });
+  card.createDiv({ text: value, cls: 'dashboard-metric-value' });
+  card.createDiv({ text: detail, cls: 'dashboard-metric-detail' });
 }
 
 function renderInlineRate(container: HTMLElement, done: number, total: number): void {
-  const cell = container.createEl('div', { cls: 'dashboard-rate-cell' });
-  cell.createEl('span', { text: `${Math.round(getRate(done, total))}%` });
+  const cell = container.createDiv({ cls: 'dashboard-rate-cell' });
+  cell.createSpan({ text: `${Math.round(getRate(done, total))}%` });
   cell.createEl('small', { text: `${done}/${total}` });
 }
 

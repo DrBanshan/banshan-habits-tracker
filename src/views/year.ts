@@ -12,20 +12,20 @@ export function renderYearView(container: HTMLElement, plugin: HabitTrackerPlugi
   let cachedItems: HTMLElement[] = [];
 
   habits.forEach((habit, idx) => {
-    const section = container.createEl('div', { cls: 'habit-section github-style habit-drag-item' });
+    const section = container.createDiv({ cls: 'habit-section github-style habit-drag-item' });
     section.setAttribute('draggable', 'true');
     section.setAttribute('data-habit-index', String(idx));
     
-    const header = section.createEl('div', { cls: 'github-header' });
-    header.createEl('div', { text: habit.name, cls: 'habit-name' });
+    const header = section.createDiv({ cls: 'github-header' });
+    header.createDiv({ text: habit.name, cls: 'habit-name' });
 
-    const headerYearSelector = header.createEl('div', { cls: 'github-year-selector' });
+    const headerYearSelector = header.createDiv({ cls: 'github-year-selector' });
 
-    const yearContainer = section.createEl('div', { cls: 'github-year-container' });
+    const yearContainer = section.createDiv({ cls: 'github-year-container' });
 
-    const graphContainer = yearContainer.createEl('div', { cls: 'github-graph-container' });
+    const graphContainer = yearContainer.createDiv({ cls: 'github-graph-container' });
     
-    const grid = graphContainer.createEl('div', { cls: 'github-square-grid' });
+    const grid = graphContainer.createDiv({ cls: 'github-square-grid' });
 
 
     const startDate = new Date(state.selectedYear, 0, 1);
@@ -43,7 +43,7 @@ export function renderYearView(container: HTMLElement, plugin: HabitTrackerPlugi
       currentDate.setDate(startDate.getDate() + i);
       const dateStr = formatDate(currentDate);
 
-      const cell = grid.createEl('div', { cls: 'github-cell', attr: { 'data-date': dateStr, 'data-habit': habit.name } });
+      const cell = grid.createDiv({ cls: 'github-cell', attr: { 'data-date': dateStr, 'data-habit': habit.name } });
 
       if (currentDate.getFullYear() !== state.selectedYear) {
         cell.addClass('outside-year');

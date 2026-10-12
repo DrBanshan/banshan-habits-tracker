@@ -37,8 +37,8 @@ export class HabitTrackerView extends ItemView {
     const contentEl = this.containerEl.children[1] as HTMLElement;
     contentEl.empty();
     // Create two persistent sections that don't get destroyed on re-render
-    this.controlsPanel = contentEl.createEl('div', { cls: 'habit-controls-panel' });
-    this.viewPanel = contentEl.createEl('div', { cls: 'habit-view-panel habit-content' });
+    this.controlsPanel = contentEl.createDiv({ cls: 'habit-controls-panel' });
+    this.viewPanel = contentEl.createDiv({ cls: 'habit-view-panel habit-content' });
     // Subscribe to store changes for automatic re-rendering
     this.unsubscribeStore = subscribe((payload) => {
       if (payload && payload.type === 'toggle' && payload.habitName && payload.date) {
@@ -366,8 +366,8 @@ export class HabitTrackerView extends ItemView {
     wrapped.addClass('habit-tracker-container');
 
     // Create two persistent sections if they don't exist yet
-    this.controlsPanel = wrapped.createEl('div', { cls: 'habit-controls-panel' });
-    this.viewPanel = wrapped.createEl('div', { cls: 'habit-view-panel habit-content' });
+    this.controlsPanel = wrapped.createDiv({ cls: 'habit-controls-panel' });
+    this.viewPanel = wrapped.createDiv({ cls: 'habit-view-panel habit-content' });
 
     const controlsEl = this.renderControls(this.controlsPanel);
     const contentWrapper = this.viewPanel;
@@ -390,11 +390,11 @@ export class HabitTrackerView extends ItemView {
 
     if (state.errorInfo) {
       const info = state.errorInfo;
-      const card = this.viewPanel.createEl('div', { cls: 'no-habits-message error-card' });
-      card.createEl('div', { text: 'Habit data could not be loaded', cls: 'error-title' });
-      card.createEl('div', { text: info.message, cls: 'error-detail' });
+      const card = this.viewPanel.createDiv({ cls: 'no-habits-message error-card' });
+      card.createDiv({ text: 'Habit data could not be loaded', cls: 'error-title' });
+      card.createDiv({ text: info.message, cls: 'error-detail' });
       if (info.habit) {
-        card.createEl('div', {
+        card.createDiv({
           text: `Affected habit: ${info.habit}${info.date ? ` on ${info.date}` : ''}`,
           cls: 'error-detail'
         });
@@ -425,12 +425,12 @@ export class HabitTrackerView extends ItemView {
     }
 
     if (state.loading) {
-      this.viewPanel.createEl('div', { text: 'Loading habit data…', cls: 'no-habits-message' });
+      this.viewPanel.createDiv({ text: 'Loading habit data…', cls: 'no-habits-message' });
       return;
     }
 
     if (habits.length === 0) {
-      this.viewPanel.createEl('div', { text: 'No habits yet. Click "Add" to get started!', cls: 'no-habits-message' });
+      this.viewPanel.createDiv({ text: 'No habits yet. Click "Add" to get started!', cls: 'no-habits-message' });
       return;
     }
 
@@ -452,7 +452,7 @@ export class HabitTrackerView extends ItemView {
   }
 
   private renderControls(container: HTMLElement): HTMLElement {
-    const controlsSection = container.createEl('div', { cls: 'habit-controls' });
+    const controlsSection = container.createDiv({ cls: 'habit-controls' });
 
     const addButton = controlsSection.createEl('button', { text: 'Add', cls: 'habit-control-button' });
     addButton.addEventListener('click', () => {
@@ -462,24 +462,24 @@ export class HabitTrackerView extends ItemView {
     const habits = this.plugin.getState().habits;
 
     if (habits.length > 0) {
-      const selectorContainer = controlsSection.createEl('div', { cls: 'habit-selector-container' });
-      const customDropdown = selectorContainer.createEl('div', { cls: 'custom-habit-dropdown' });
+      const selectorContainer = controlsSection.createDiv({ cls: 'habit-selector-container' });
+      const customDropdown = selectorContainer.createDiv({ cls: 'custom-habit-dropdown' });
 
       const dropdownButton = customDropdown.createEl('button', { cls: 'habit-dropdown-button' });
-      dropdownButton.createEl('span', { text: this.plugin.getState().selectedHabit || 'Select Habit', cls: 'habit-dropdown-text' });
-      dropdownButton.createEl('span', { text: '▼', cls: 'habit-dropdown-arrow' });
+      dropdownButton.createSpan({ text: this.plugin.getState().selectedHabit || 'Select Habit', cls: 'habit-dropdown-text' });
+      dropdownButton.createSpan({ text: '▼', cls: 'habit-dropdown-arrow' });
 
-      const dropdownMenu = customDropdown.createEl('div', { cls: 'habit-dropdown-menu' });
+      const dropdownMenu = customDropdown.createDiv({ cls: 'habit-dropdown-menu' });
 
       habits.forEach(habit => {
-        const item = dropdownMenu.createEl('div', { cls: 'habit-dropdown-item' });
+        const item = dropdownMenu.createDiv({ cls: 'habit-dropdown-item' });
         if (habit.name === this.plugin.getState().selectedHabit) item.addClass('active');
-        item.createEl('span', { text: habit.name, cls: 'habit-item-text' });
+        item.createSpan({ text: habit.name, cls: 'habit-item-text' });
         // A row that came from the month table only has no properties entry behind it, so say so: the
         // card otherwise reads as unconfigured with no hint of why.
         if ((this.plugin.getState().needsDefinition ?? []).includes(habit.name)) {
           item.addClass('needs-definition');
-          item.createEl('span', { text: 'needs details', cls: 'habit-needs-definition-hint' });
+          item.createSpan({ text: 'needs details', cls: 'habit-needs-definition-hint' });
         }
         item.addEventListener('click', (e) => {
           e.stopPropagation();
@@ -516,8 +516,8 @@ export class HabitTrackerView extends ItemView {
         }
       });
 
-      const viewControlsContainer = controlsSection.createEl('div', { cls: 'view-controls-container' });
-      const radioGroup = viewControlsContainer.createEl('div', { cls: 'view-radio-group' });
+      const viewControlsContainer = controlsSection.createDiv({ cls: 'view-controls-container' });
+      const radioGroup = viewControlsContainer.createDiv({ cls: 'view-radio-group' });
 
       const viewOptions = [
         { value: 'dashboard', text: 'Dash', title: 'Dashboard summary and analytics' },
@@ -549,12 +549,12 @@ export class HabitTrackerView extends ItemView {
           }
         });
 
-        radioLabel.createEl('span', { text: option.text, cls: 'view-radio-text' });
+        radioLabel.createSpan({ text: option.text, cls: 'view-radio-text' });
         radioLabel.setAttribute('title', option.title);
       });
     }
 
-    const controlsRight = controlsSection.createEl('div', { cls: 'controls-right' });
+    const controlsRight = controlsSection.createDiv({ cls: 'controls-right' });
 
     const settingsBtn = controlsRight.createEl('button', { cls: 'habit-settings-button', attr: { type: 'button', title: 'Settings' } });
     setIcon(settingsBtn, 'settings');

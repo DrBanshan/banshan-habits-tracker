@@ -65,13 +65,13 @@ export function renderTodayView(container: HTMLElement, plugin: HabitTrackerPlug
     return days[((index + offset) % 7 + 7) % 7];
   };
 
-  const todaySection = container.createEl('div', { cls: 'today-overview' });
-  const titleRow = todaySection.createEl('div', { cls: 'today-title-row' });
+  const todaySection = container.createDiv({ cls: 'today-overview' });
+  const titleRow = todaySection.createDiv({ cls: 'today-title-row' });
   titleRow.createEl('h2', { text: 'Today', cls: 'today-title' });
   const dateStr = `${today.getFullYear()}/${String(today.getMonth() + 1).padStart(2, '0')}/${String(today.getDate()).padStart(2, '0')}`;
-  titleRow.createEl('span', { text: dateStr, cls: 'today-date-label' });
+  titleRow.createSpan({ text: dateStr, cls: 'today-date-label' });
 
-  const cardsContainer = todaySection.createEl('div', { cls: 'today-cards-container habit-draggable' });
+  const cardsContainer = todaySection.createDiv({ cls: 'today-cards-container habit-draggable' });
 
   // Apply compact-mode class based on actual container width (not viewport)
   const COMPACT_WIDTH_THRESHOLD = 500;
@@ -113,36 +113,36 @@ export function renderTodayView(container: HTMLElement, plugin: HabitTrackerPlug
     const streakInfo = calculateStreak(habit, plugin.getState().completions);
     const currentStreak = streakInfo.current;
 
-    const card = cardsContainer.createEl('div', { cls: 'today-card habit-section habit-drag-item' });
+    const card = cardsContainer.createDiv({ cls: 'today-card habit-section habit-drag-item' });
     card.setAttribute('draggable', 'true');
     card.setAttribute('data-habit-index', String(idx));
     const isTodayCompleted = isHabitCompleted(plugin, habit.name, todayStr);
 
     // Column 1: streak day count
-    const left = card.createEl('div', { cls: 'today-card-left' });
-    left.createEl('div', { text: String(currentStreak), cls: 'today-count-number' });
-    left.createEl('div', { text: currentStreak === 1 ? 'DAY' : 'DAYS', cls: 'today-count-label' });
+    const left = card.createDiv({ cls: 'today-card-left' });
+    left.createDiv({ text: String(currentStreak), cls: 'today-count-number' });
+    left.createDiv({ text: currentStreak === 1 ? 'DAY' : 'DAYS', cls: 'today-count-label' });
 
     // Column 2: today toggle
     const checkBtn = card.createEl('button', { cls: 'today-check-button-inline' });
-    checkBtn.createEl('span', { text: isTodayCompleted ? '✓' : '', cls: 'today-check-mark' });
+    checkBtn.createSpan({ text: isTodayCompleted ? '✓' : '', cls: 'today-check-mark' });
     if (isTodayCompleted) checkBtn.addClass('active');
 
     // Column 3: habit name
-    card.createEl('div', { text: habit.name, cls: 'today-habit-name' });
+    card.createDiv({ text: habit.name, cls: 'today-habit-name' });
 
     // Column 4: day blocks
-    const blocksContainer = card.createEl('div', { cls: 'today-blocks-container' });
+    const blocksContainer = card.createDiv({ cls: 'today-blocks-container' });
     blocksContainer.setAttribute('data-days', String(numDays));
     for (let w = 0; w < numDays; w += 7) {
-      const weekRow = blocksContainer.createEl('div', { cls: 'today-week-row' });
+      const weekRow = blocksContainer.createDiv({ cls: 'today-week-row' });
       for (let i = w; i < Math.min(w + 7, numDays); i++) {
         const d = habitDates[i];
         const dStr = formatDate(d);
-        const sq = weekRow.createEl('div', { cls: 'today-week-square' });
+        const sq = weekRow.createDiv({ cls: 'today-week-square' });
         // Day label based on this habit's window offset from today's Monday
         const habitOffset = Math.round((habitDates[0].getTime() - todayMonday.getTime()) / (1000 * 60 * 60 * 24));
-        sq.createEl('span', { text: getDayLabel(i, habitOffset), cls: 'today-week-initial' });
+        sq.createSpan({ text: getDayLabel(i, habitOffset), cls: 'today-week-initial' });
 
         const completed = isHabitCompleted(plugin, habit.name, dStr);
         // Clear any leftover inline styles from previous renders
@@ -199,7 +199,7 @@ export function renderTodayView(container: HTMLElement, plugin: HabitTrackerPlug
     }
 
     // Column 5: total day count
-    card.createEl('div', { text: `${weekCount}/${numDays}`, cls: 'today-week-count-inline' });
+    card.createDiv({ text: `${weekCount}/${numDays}`, cls: 'today-week-count-inline' });
 
     if (isTodayCompleted) {
       card.addClass('active-today');

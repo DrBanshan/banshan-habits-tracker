@@ -16,7 +16,7 @@ export function renderMonthView(container: HTMLElement, plugin: HabitTrackerPlug
   let cachedItems: HTMLElement[] = [];
 
   habits.forEach((habit, idx) => {
-    const habitBlock = container.createEl('div', { cls: 'month-habit-block habit-drag-item' });
+    const habitBlock = container.createDiv({ cls: 'month-habit-block habit-drag-item' });
     habitBlock.setAttribute('draggable', 'true');
     habitBlock.setAttribute('data-habit-index', String(idx));
     renderMonthCalendar(habitBlock, habit, today, plugin, state);
@@ -107,13 +107,13 @@ function renderMonthCalendar(container: HTMLElement, habit: Habit, today: Date, 
                            'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
   // Habit name header
-  const habitHeader = container.createEl('div', { cls: 'month-habit-header' });
-  habitHeader.createEl('div', { text: `${habit.icon} ${habit.name}`, cls: 'month-habit-name' });
+  const habitHeader = container.createDiv({ cls: 'month-habit-header' });
+  habitHeader.createDiv({ text: `${habit.icon} ${habit.name}`, cls: 'month-habit-name' });
 
   // Month navigation
-  const nav = habitHeader.createEl('div', { cls: 'month-nav' });
+  const nav = habitHeader.createDiv({ cls: 'month-nav' });
   const prevBtn = nav.createEl('button', { text: '◀', cls: 'month-nav-btn' });
-  const monthLabel = nav.createEl('span', { cls: 'month-label' });
+  const monthLabel = nav.createSpan({ cls: 'month-label' });
   const nextBtn = nav.createEl('button', { text: '▶', cls: 'month-nav-btn' });
 
   const updateMonthLabel = () => {
@@ -137,16 +137,16 @@ function renderMonthCalendar(container: HTMLElement, habit: Habit, today: Date, 
   });
 
   // Calendar grid
-  const calendar = container.createEl('div', { cls: 'month-calendar' });
+  const calendar = container.createDiv({ cls: 'month-calendar' });
   
   // Weekday headers
-  const weekHeader = calendar.createEl('div', { cls: 'month-weekdays' });
+  const weekHeader = calendar.createDiv({ cls: 'month-weekdays' });
   ['M', 'T', 'W', 'T', 'F', 'S', 'S'].forEach(day => {
-    weekHeader.createEl('div', { text: day, cls: 'month-weekday' });
+    weekHeader.createDiv({ text: day, cls: 'month-weekday' });
   });
 
   // Days grid
-  const daysGrid = calendar.createEl('div', { cls: 'month-days' });
+  const daysGrid = calendar.createDiv({ cls: 'month-days' });
 
   const year = state.selectedMonth.getFullYear();
   const month = state.selectedMonth.getMonth();
@@ -156,15 +156,15 @@ function renderMonthCalendar(container: HTMLElement, habit: Habit, today: Date, 
 
   // Empty cells for days before the 1st
   for (let i = 0; i < startingDayOfWeek; i++) {
-    daysGrid.createEl('div', { cls: 'month-day empty' });
+    daysGrid.createDiv({ cls: 'month-day empty' });
   }
 
   // Day cells
   for (let day = 1; day <= lastDay.getDate(); day++) {
     const currentDate = new Date(year, month, day);
     const dateStr = formatDate(currentDate);
-    const dayCell = daysGrid.createEl('div', { cls: 'month-day', attr: { 'data-date': dateStr, 'data-habit': habit.name } });
-    dayCell.createEl('div', { text: String(day), cls: 'month-day-num' });
+    const dayCell = daysGrid.createDiv({ cls: 'month-day', attr: { 'data-date': dateStr, 'data-habit': habit.name } });
+    dayCell.createDiv({ text: String(day), cls: 'month-day-num' });
 
     const isCompleted = isHabitCompleted(plugin, habit.name, dateStr);
     if (isCompleted) {

@@ -270,7 +270,7 @@ export class RestoreDataFileModal extends Modal {
         const label = entry.at ? new Date(entry.at).toLocaleString() : entry.stamp;
         row.createEl('button', { cls: 'backup-restore-button', text: label })
           .addEventListener('click', () => { void this.onPick(entry.stamp).then(() => this.close()); });
-        row.createEl('span', { text: `${entry.bytes} bytes`, cls: 'backup-size' });
+        row.createSpan({ text: `${entry.bytes} bytes`, cls: 'backup-size' });
       }
     })();
   }

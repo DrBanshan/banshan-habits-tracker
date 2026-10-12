@@ -6,9 +6,9 @@
  * main window while the view it serves lives somewhere else. The app exposes the focused window for
  * exactly this reason, so every timer and frame in the plugin goes through it here.
  *
- * That window carries these helpers at run time, but they lag in the installed typings, so the shape is
- * spelled out rather than picked up by name. The typeof test is for headless runs, which have no focused
- * window at all and would otherwise throw on a name that does not exist.
+ * Those members are missing from the shipped typings, so the handful the plugin uses is declared here
+ * rather than picked up by name. The headless suite has no focused window of its own, so it installs one
+ * before these calls are reached.
  */
 export interface PopoutWindow {
   setTimeout(handler: () => void, timeout: number): number;
@@ -17,5 +17,5 @@ export interface PopoutWindow {
 }
 
 export function timerHost(): PopoutWindow {
-  return (typeof activeWindow === 'undefined' ? globalThis : activeWindow) as unknown as PopoutWindow;
+  return activeWindow;
 }
