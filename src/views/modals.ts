@@ -310,3 +310,50 @@ export class RestoreDeletedHabitModal extends Modal {
       .addEventListener('click', () => { void run(); });
   }
 }
+
+/**
+ * The only place that discards the data file, and it cannot be done by accident: the button stays
+ * disabled until the file name is typed back exactly, and then needs a second click to go through.
+ * The file itself goes to the trash through the file manager, so the platform keeps a way back.
+ */
+export class ResetDataFileModal extends Modal {
+  constructor(app: App, private plugin: HabitTrackerPlugin, private onConfirm: () => Promise<void>) {
+    super(app);
+  }
+
+  onOpen(): void {
+    const { contentEl } = this;
+    contentEl.empty();
+    const name = this.plugin.settings.habitsFilePath;
+    contentEl.createEl('h2', { text: 'Reset the data file' });
+    contentEl.createEl('p', { text: `Type "${name}" to confirm. The file moves to the trash and a fresh one takes its place.` });
+    contentEl.createEl('p', { text: 'Your habits and their history are deleted. Restoring a kept copy afterwards is possible only from Restore previous data file, before this window closes.', cls: 'mod-warning-text' });
+
+    const field = contentEl.createEl('input', {
+      type: 'text', cls: 'reset-confirm-input', attr: { 'aria-label': `Type ${name} to confirm` }
+    });
+    const confirm = contentEl.createEl('button', {
+      text: 'Move to trash and reset', cls: 'mod-cta mod-warning reset-confirm-button'
+    });
+    confirm.disabled = true;
+
+    // Two confirmations: the typed name arms the button, then a second click commits. The label is the
+    // only thing that changes in between, so it reads as what the next click will do.
+    let armed = false;
+    field.addEventListener('input', () => {
+      armed = false;
+      confirm.textContent = 'Move to trash and reset';
+      confirm.disabled = field.value.trim() !== name;
+    });
+    confirm.addEventListener('click', () => {
+      if (confirm.disabled) return;
+      if (!armed) {
+        armed = true;
+        confirm.textContent = `Tap again to move ${name} to the trash`;
+        return;
+      }
+      confirm.disabled = true;                      // no second run while the first is in flight
+      void this.onConfirm().then(() => this.close());
+    });
+  }
+}

@@ -653,7 +653,25 @@
   word-break: break-word;
 }
 
-.error-retry-button {
+/* The failure card. Replaced the old single retry button, which offered to delete the data file. */
+.error-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+  text-align: start;
+}
+
+.error-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.error-action-button {
+  /* At least 44px each way, so the ways out stay usable under a thumb on a phone. */
+  min-height: 44px;
+  min-width: 44px;
   padding: 8px 16px;
   background: var(--background-primary);
   border: 1px solid var(--background-modifier-border);
@@ -663,8 +681,41 @@
   color: var(--text-normal);
 }
 
-.error-retry-button:hover {
+.error-action-button:hover {
   background: var(--background-modifier-hover);
+}
+
+.error-action-button:focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 2px;
+}
+
+.error-action-button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.error-diagnostics-field {
+  width: 100%;
+  min-height: 88px;
+  font-family: var(--font-monospace-normal);
+  font-size: var(--font-ui-small);
+  background: var(--background-primary);
+  color: var(--text-normal);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  padding: 8px;
+}
+
+/* A habit known only from a month table row, so its card has no settings of its own yet. */
+.habit-needs-definition-hint {
+  margin-left: 8px;
+  font-size: var(--font-ui-small);
+  color: var(--text-muted);
+}
+
+.habit-dropdown-item.needs-definition .habit-item-text {
+  font-style: italic;
 }
 
 /* Month View - 4 habits per row */

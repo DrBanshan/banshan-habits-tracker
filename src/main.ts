@@ -2,11 +2,11 @@ import { App, Plugin, PluginSettingTab, Setting } from 'obsidian';
 import { HabitTrackerView, VIEW_TYPE_HABIT_TRACKER } from './view';
 import { init, loadHabits, toggleDay, addHabit, renameHabit, deleteHabit, setHabitColor, setViewType, setSelectedHabit, setSelectedMonth, setSelectedYear, getState, reorderHabits, updateSettings, setPlugin, restoreFromBackup, restoreHabit, isSaving } from './store';
 import { startWatcher } from './storage/vaultFile';
-import { RestoreDataFileModal, RestoreDeletedHabitModal } from './views/modals';
+import { RestoreDataFileModal, RestoreDeletedHabitModal, ResetDataFileModal } from './views/modals';
 import { DEFAULT_HABITS_FILE } from './types';
 import { BackupStore } from './storage/backup';
 import type { Habit, ViewType, Frequency, StreakMode, EmptyTableDetection } from './types';
-import { lintHabitsFile } from './parser';
+import { lintHabitsFile, isTFile } from './parser';
 import { Notice } from 'obsidian';
 
 interface PluginSettings {
@@ -97,6 +97,14 @@ export default class HabitTrackerPlugin extends Plugin {
   /** The way back to a kept copy, shared by the command palette and the failure card. */
   openRestoreBackupModal(): void {
     new RestoreDataFileModal(this, async (stamp) => { await restoreFromBackup(stamp); }).open();
+  }
+
+  /** Show the data file in the main area, for when the right advice is to go and look at it. */
+  async openDataFile(): Promise<void> {
+    const file = this.app.vault.getAbstractFileByPath(this.settings.habitsFilePath);
+    if (!isTFile(file)) return;
+    const leaf = this.app.workspace.getLeaf(true);
+    await leaf?.openFile(file);
   }
 
   async activateView(): Promise<void> {
@@ -280,6 +288,21 @@ class HabitTrackerSettingTab extends PluginSettingTab {
           await this.plugin.saveSettings();
           updateSettings(undefined, undefined, undefined, value);
         }));
+
+    // The destructive path, moved here from the error card where it sat in front of someone whose data
+    // had just failed to load. It goes through the file manager to the trash, so the platform keeps a
+    // way back, and cannot be confirmed without typing the file name.
+    new Setting(containerEl)
+      .setName('Reset the data file')
+      .setDesc('Moves the current data file to the trash and starts a fresh one. Your habits and history are deleted.')
+      .addButton(btn => btn.setButtonText('Reset…').setWarning().onClick(() => {
+        new ResetDataFileModal(this.app, this.plugin, async () => {
+          const file = this.app.vault.getAbstractFileByPath(this.plugin.settings.habitsFilePath);
+          if (isTFile(file)) await this.app.fileManager.trashFile(file);
+          await this.plugin.loadHabits();
+          await this.plugin.refreshView();
+        }).open();
+      }));
   }
 }
 

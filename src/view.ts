@@ -1,7 +1,9 @@
-import { ItemView, setIcon } from 'obsidian';
+import { ItemView, Notice, setIcon } from 'obsidian';
+import { actionsFor, labelFor } from './views/errorActions';
+import type { ErrorAction } from './views/errorActions';
 import type HabitTrackerPlugin from './main';
 import type { Habit } from './types';
-import { isTFile } from './parser';
+import type { TrackerError } from './model/tracker';
 import { renderTodayView } from './views/today';
 import { renderDashboardView } from './views/dashboard';
 import { renderMonthView } from './views/month';
@@ -335,6 +337,26 @@ export class HabitTrackerView extends ItemView {
     return l > 0.6 ? '#000' : '#fff';
   }
 
+  /**
+   * The report a person can paste into an issue, revealed only when asked for rather than thrown at
+   * them: a wall of text is no use to someone trying to work out which button to press.
+   */
+  private offerDiagnostics(card: HTMLElement, info: TrackerError, path: string): void {
+    card.querySelector('.error-diagnostics-field')?.remove();   // one field, however often it is asked for
+    const field = card.createEl('textarea', {
+      cls: 'error-diagnostics-field', attr: { 'aria-label': 'Diagnostics to copy', readonly: 'true' }
+    });
+    const where = info.habit ? `habit: ${info.habit}${info.date ? ` on ${info.date}` : ''}` : undefined;
+    field.value = [
+      `[HabitTracker] ${info.kind}: ${info.message}`,
+      `at ${info.occurredAt}`,
+      `file: ${path}`,
+      where
+    ].filter((line): line is string => line !== undefined).join('\n');
+    field.select();
+    new Notice('Diagnostics selected — press Ctrl+C', 4000);
+  }
+
   async render(): Promise<void> {
     const contentEl = this.containerEl.children[1];
     if (!contentEl) return;
@@ -363,27 +385,44 @@ export class HabitTrackerView extends ItemView {
     const state = this.plugin.getState();
     const habits = state.habits;
 
-    if (state.error) {
-      const errorEl = this.viewPanel.createEl('div', { cls: 'no-habits-message' });
-      errorEl.createEl('div', { text: '⚠️ Error loading habits', cls: 'error-title' });
-      errorEl.createEl('div', { text: state.error, cls: 'error-detail' });
-      errorEl.createEl('button', {
-        text: 'Delete habits file & reload',
-        cls: 'error-retry-button'
-      }).addEventListener('click', () => {
-        void (async () => {
-          try {
-            const file = this.app.vault.getAbstractFileByPath(state.habitsFilePath);
-            if (isTFile(file)) {
-              await this.app.fileManager.trashFile(file);
-            }
-            await this.plugin.loadHabits();
-            await this.render();
-          } catch (e) {
-            console.error('[HabitTracker] Failed to retry:', e);
-          }
-        })();
-      });
+    if (state.errorInfo) {
+      const info = state.errorInfo;
+      const card = this.viewPanel.createEl('div', { cls: 'no-habits-message error-card' });
+      card.createEl('div', { text: 'Habit data could not be loaded', cls: 'error-title' });
+      card.createEl('div', { text: info.message, cls: 'error-detail' });
+      if (info.habit) {
+        card.createEl('div', {
+          text: `Affected habit: ${info.habit}${info.date ? ` on ${info.date}` : ''}`,
+          cls: 'error-detail'
+        });
+      }
+
+      // Nothing on this card may destroy the file: it appears precisely when the data looks damaged,
+      // which is the worst possible moment to offer destroying it. The mapping is a pure module so the
+      // rule can be asserted rather than eyeballed.
+      const actions = card.createDiv({ cls: 'error-actions' });
+      const run = (action: ErrorAction): void => {
+        if (action === 'retry') {
+          void this.plugin.loadHabits().then(() => this.render());
+        } else if (action === 'open-file') {
+          void this.plugin.openDataFile();
+        } else if (action === 'restore') {
+          this.plugin.openRestoreBackupModal();
+        } else if (action === 'diagnostics') {
+          this.offerDiagnostics(card, info, state.habitsFilePath);
+        }
+      };
+      for (const action of actionsFor(info.kind)) {
+        const label = labelFor(action);
+        actions.createEl('button', {
+          text: label, cls: 'error-action-button', attr: { type: 'button', 'aria-label': label }
+        }).addEventListener('click', () => run(action));
+      }
+      return;
+    }
+
+    if (state.loading) {
+      this.viewPanel.createEl('div', { text: 'Loading habit data…', cls: 'no-habits-message' });
       return;
     }
 
@@ -433,6 +472,12 @@ export class HabitTrackerView extends ItemView {
         const item = dropdownMenu.createEl('div', { cls: 'habit-dropdown-item' });
         if (habit.name === this.plugin.getState().selectedHabit) item.addClass('active');
         item.createEl('span', { text: habit.name, cls: 'habit-item-text' });
+        // A row that came from the month table only has no properties entry behind it, so say so: the
+        // card otherwise reads as unconfigured with no hint of why.
+        if ((this.plugin.getState().needsDefinition ?? []).includes(habit.name)) {
+          item.addClass('needs-definition');
+          item.createEl('span', { text: 'needs details', cls: 'habit-needs-definition-hint' });
+        }
         item.addEventListener('click', (e) => {
           e.stopPropagation();
           this.plugin.setSelectedHabit(habit.name);
