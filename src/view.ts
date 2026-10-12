@@ -13,6 +13,7 @@ import { AddHabitModal, EditHabitModal, DeleteHabitModal } from './views/modals'
 import { subscribe } from './store';
 import { calculateStreak } from './streak';
 import type { ViewType } from './types';
+import { timerHost } from './dom';
 
 export const VIEW_TYPE_HABIT_TRACKER = 'banshan-habit-tracker-view';
 
@@ -379,8 +380,10 @@ export class HabitTrackerView extends ItemView {
       } catch { /* ignore */ }
     };
 
-    window.requestAnimationFrame(applyOffset);
-    window.addEventListener('resize', applyOffset);
+    // Follows the focused window so a popout relayouts rather than the main one, and goes through the
+    // view's own cleanup so the listener dies with the leaf instead of accumulating per onOpen.
+    timerHost().requestAnimationFrame(applyOffset);
+    this.registerEvent(this.app.workspace.on('resize', applyOffset));
 
     const state = this.plugin.getState();
     const habits = state.habits;
@@ -491,7 +494,7 @@ export class HabitTrackerView extends ItemView {
         dropdownMenu.toggleClass('show', true);
       });
 
-      this.registerDomEvent(window.document, 'click', (e: MouseEvent) => {
+      this.registerDomEvent(activeDocument, 'click', (e: MouseEvent) => {
         if (!customDropdown.contains(e.target as Node)) {
           dropdownMenu.toggleClass('show', false);
         }

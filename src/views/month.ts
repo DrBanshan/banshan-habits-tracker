@@ -1,5 +1,6 @@
 import type HabitTrackerPlugin from '../main';
 import type { AppState, Habit } from '../types';
+import { timerHost } from '../dom';
 
 export function renderMonthView(container: HTMLElement, plugin: HabitTrackerPlugin, state: AppState): void {
   const habits = state.habits;
@@ -38,7 +39,7 @@ export function renderMonthView(container: HTMLElement, plugin: HabitTrackerPlug
     e.dataTransfer.dropEffect = 'move';
     // Throttle to one layout calculation per frame
     if (rafId !== null) return;
-    rafId = window.requestAnimationFrame(() => {
+    rafId = timerHost().requestAnimationFrame(() => {
       rafId = null;
       const items = cachedItems;
       for (const item of items) {

@@ -1,7 +1,7 @@
 import * as yaml from 'yaml';
 import type { CompletionStatus, Habit } from '../types';
 import { emptyDoc, normalizeDoc } from '../model/tracker';
-import type { DeletedHabit, TrackerDoc } from '../model/tracker';
+import type { TrackerDoc } from '../model/tracker';
 import { CELL_DONE, CELL_MISS, SYNTHESISED_ICON, colourFor, parseMonthHeader, stripIcon, toIsoDate } from './format';
 
 export type DeserializeFailure = 'no-frontmatter' | 'bad-yaml' | 'no-habits';
@@ -122,7 +122,7 @@ export function deserialize(content: string): DeserializeResult {
     for (const entry of raw.deletedHabits) {
       if (!isRecord(entry)) continue;
       const name = asString(entry.name, '');
-      if (name) doc.deletedHabits.push({ name, deletedAt: asString(entry.deletedAt, '') } as DeletedHabit);
+      if (name) doc.deletedHabits.push({ name, deletedAt: asString(entry.deletedAt, '') });
     }
   }
   for (const key of Object.keys(raw)) {

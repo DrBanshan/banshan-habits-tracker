@@ -1,4 +1,5 @@
 import { App, Plugin, PluginSettingTab, Setting } from 'obsidian';
+import type { SettingDefinitionItem } from 'obsidian';
 import { HabitTrackerView, VIEW_TYPE_HABIT_TRACKER } from './view';
 import { init, loadHabits, toggleDay, addHabit, renameHabit, deleteHabit, setHabitColor, setViewType, setSelectedHabit, setSelectedMonth, setSelectedYear, getState, reorderHabits, updateSettings, setPlugin, restoreFromBackup, restoreHabit, isSaving } from './store';
 import { startWatcher } from './storage/vaultFile';
@@ -29,36 +30,28 @@ export default class HabitTrackerPlugin extends Plugin {
   private stopWatcher: (() => void) | null = null;
 
   async onload(): Promise<void> {
-    console.log('[HabitTracker] Loading plugin...');
     try {
       // First, so anything reading the blob during load sees a store that exists.
       this.backups = new BackupStore(() => this.readBlob(), async (d) => { await this.writeBlob(d); });
       setPlugin(this);
       await this.loadSettings();
-      console.log('[HabitTracker] Settings loaded');
 
       init(this.app, this.settings.habitsFilePath, this.settings.todayViewDays, this.settings.keepDeletedData, this.settings.emptyTableDetection, this.settings.debugMode);
       updateSettings(undefined, this.settings.keepDeletedData, this.settings.emptyTableDetection, this.settings.debugMode);
-      console.log('[HabitTracker] Store initialized');
 
       await loadHabits();
-      console.log('[HabitTracker] Habits loaded');
 
       this.setWatcherPath();
-      console.log('[HabitTracker] Watching the data file for outside edits');
 
       this.registerView(VIEW_TYPE_HABIT_TRACKER, (leaf) => new HabitTrackerView(leaf, this));
-      console.log('[HabitTracker] View registered');
 
       this.addRibbonIcon('calendar-check', 'Open Habit Tracker', () => this.activateView());
-      console.log('[HabitTracker] Ribbon icon added');
 
       this.addCommand({
         id: 'open-habit-tracker',
         name: 'Open Habit Tracker',
         callback: () => this.activateView()
       });
-      console.log('[HabitTracker] Command added');
 
       this.addCommand({
         id: 'restore-data-file',
@@ -70,7 +63,7 @@ export default class HabitTrackerPlugin extends Plugin {
         id: 'restore-deleted-habit',
         name: 'Restore deleted habit',
         callback: () => {
-          new RestoreDeletedHabitModal(this, async () => { this.refreshView(); }).open();
+          new RestoreDeletedHabitModal(this, async () => { await this.refreshView(); }).open();
         }
       });
 
@@ -87,7 +80,6 @@ export default class HabitTrackerPlugin extends Plugin {
       });
 
       this.addSettingTab(new HabitTrackerSettingTab(this.app, this));
-      console.log('[HabitTracker] Settings tab added');
     } catch (error) {
       console.error('[HabitTracker] Failed to load:', error);
       throw error;
@@ -163,7 +155,9 @@ export default class HabitTrackerPlugin extends Plugin {
    * saving settings as the whole blob would drop the `backups` key along with it.
    */
   async readBlob(): Promise<Record<string, unknown> | null> {
-    const raw = await this.loadData();
+    // loadData is typed loosely in the SDK, so it comes in as unknown and is narrowed here rather
+    // than being allowed to flow on untyped through the merge below.
+    const raw: unknown = await this.loadData();
     return typeof raw === 'object' && raw !== null ? raw as Record<string, unknown> : {};
   }
 
@@ -225,8 +219,71 @@ class HabitTrackerSettingTab extends PluginSettingTab {
     const { containerEl } = this;
     containerEl.empty();
     new Setting(containerEl).setName('Habit Tracker').setHeading();
+    this.rowHabitsFilePath(new Setting(containerEl));
+    this.rowTodayViewDays(new Setting(containerEl));
+    this.rowKeepDeletedData(new Setting(containerEl));
+    this.rowEmptyTableDetection(new Setting(containerEl));
+    this.rowDebugMode(new Setting(containerEl));
+    this.rowResetDataFile(new Setting(containerEl));
+  }
 
-    new Setting(containerEl)
+  /**
+   * Declared for 1.13.0 and later, where the framework renders settings itself and builds the settings
+   * search from these definitions: leave them out and a user searching for one of these rows never finds it,
+   * because display() is opaque to that index. The rows come from the very builders display() uses, so the
+   * indexed text and the rendered control cannot drift apart.
+   */
+  getSettingDefinitions(): SettingDefinitionItem[] {
+    return [{
+      type: 'group',
+      items: [
+        {
+          name: 'Habits File Path',
+          desc: 'Path to the markdown file containing your habits (e.g., habits.md)',
+          aliases: ['data file', 'habits.md', 'tracker file'],
+          render: (setting) => this.rowHabitsFilePath(setting)
+        },
+        {
+          name: 'Today View Days',
+          desc: 'Number of days to display in the Today view (7 or 21)',
+          aliases: ['days shown', 'today view'],
+          render: (setting) => this.rowTodayViewDays(setting)
+        },
+        {
+          name: 'Keep data when deleting habits',
+          desc: 'When deleting a habit, keep its historical data in the file (shown with 🗑️ icon).',
+          aliases: ['archive', 'delete habit', 'history'],
+          render: (setting) => this.rowKeepDeletedData(setting)
+        },
+        {
+          name: 'Empty table detection',
+          desc: 'On the fly → filters empty tables on every data change; Once upon reloading → only cleans up when plugin reloads; Manually → nothing is removed until you run Clean empty month sections',
+          aliases: ['empty month', 'clean up', 'lint', 'sections'],
+          render: (setting) => this.rowEmptyTableDetection(setting)
+        },
+        {
+          name: 'Debug mode',
+          desc: 'Print debug messages to the browser console.',
+          aliases: ['verbose', 'developer'],
+          render: (setting) => this.rowDebugMode(setting)
+        },
+        {
+          name: 'Reset the data file',
+          desc: 'Moves the current data file to the trash and starts a fresh one. Your habits and history are deleted.',
+          aliases: ['delete data', 'start over', 'trash'],
+          render: (setting) => this.rowResetDataFile(setting)
+        }
+      ]
+    }];
+  }
+
+  /**
+   * The rows below each render into the Setting handed them, which is what lets display() and the
+   * declarative definitions above share one source. Each keeps its own change handler, since a change to
+   * any of them has to reach the store as well as the file.
+   */
+  private rowHabitsFilePath(setting: Setting): void {
+    setting
       .setName('Habits File Path')
       .setDesc('Path to the markdown file containing your habits (e.g., habits.md)')
       .addText(text => text
@@ -238,8 +295,10 @@ class HabitTrackerSettingTab extends PluginSettingTab {
           // The watcher has to follow the path, or it keeps watching the file the plugin left behind.
           this.plugin.setWatcherPath();
         }));
+  }
 
-    new Setting(containerEl)
+  private rowTodayViewDays(setting: Setting): void {
+    setting
       .setName('Today View Days')
       .setDesc('Number of days to display in the Today view (7 or 21)')
       .addDropdown(dd => dd
@@ -251,8 +310,10 @@ class HabitTrackerSettingTab extends PluginSettingTab {
           updateSettings(this.plugin.settings.todayViewDays);
           await this.plugin.refreshView();
         }));
+  }
 
-    new Setting(containerEl)
+  private rowKeepDeletedData(setting: Setting): void {
+    setting
       .setName('Keep data when deleting habits')
       .setDesc('When deleting a habit, keep its historical data in the file (shown with 🗑️ icon).')
       .addToggle(toggle => toggle
@@ -262,8 +323,10 @@ class HabitTrackerSettingTab extends PluginSettingTab {
           await this.plugin.saveSettings();
           updateSettings(undefined, value);
         }));
+  }
 
-    new Setting(containerEl)
+  private rowEmptyTableDetection(setting: Setting): void {
+    setting
       .setName('Empty table detection')
       .setDesc('On the fly → filters empty tables on every data change; Once upon reloading → only cleans up when plugin reloads (better performance); Manually → nothing is removed until you run Clean empty month sections')
       .addDropdown(dd => dd
@@ -277,8 +340,10 @@ class HabitTrackerSettingTab extends PluginSettingTab {
           await this.plugin.saveSettings();
           updateSettings(undefined, undefined, detectionValue);
         }));
+  }
 
-    new Setting(containerEl)
+  private rowDebugMode(setting: Setting): void {
+    setting
       .setName('Debug mode')
       .setDesc('Print debug messages to the browser console.')
       .addToggle(toggle => toggle
@@ -288,14 +353,16 @@ class HabitTrackerSettingTab extends PluginSettingTab {
           await this.plugin.saveSettings();
           updateSettings(undefined, undefined, undefined, value);
         }));
+  }
 
-    // The destructive path, moved here from the error card where it sat in front of someone whose data
-    // had just failed to load. It goes through the file manager to the trash, so the platform keeps a
-    // way back, and cannot be confirmed without typing the file name.
-    new Setting(containerEl)
+  // The destructive path, moved here from the error card where it sat in front of someone whose data
+  // had just failed to load. It goes through the file manager to the trash, so the platform keeps a
+  // way back, and cannot be confirmed without typing the file name.
+  private rowResetDataFile(setting: Setting): void {
+    setting
       .setName('Reset the data file')
       .setDesc('Moves the current data file to the trash and starts a fresh one. Your habits and history are deleted.')
-      .addButton(btn => btn.setButtonText('Reset…').setWarning().onClick(() => {
+      .addButton(btn => btn.setButtonText('Reset…').setDestructive().onClick(() => {
         new ResetDataFileModal(this.app, this.plugin, async () => {
           const file = this.app.vault.getAbstractFileByPath(this.plugin.settings.habitsFilePath);
           if (isTFile(file)) await this.app.fileManager.trashFile(file);

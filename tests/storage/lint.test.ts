@@ -28,24 +28,15 @@ describe('lintHabitsFile', () => {
     expect(app.content).toContain('## September 2026');
   });
 
-  it('is quiet unless debug mode is on', async () => {
+  it('logs nothing, in debug mode or out of it', async () => {
+    // The per-section and summary logs used to sit behind isDebug; the plugin guidelines want none of
+    // them in shipped code, so this pins their absence rather than their gating.
     const spy = vi.spyOn(console, 'log').mockImplementation(() => { });
     try {
+      init({ } as never, 'habits.md', undefined, undefined, undefined, true);      // debugMode on
       const app = fakeApp(FILE);
       await lintHabitsFile(app.app as never, 'habits.md');
       expect(spy.mock.calls.some(c => String(c[0]).includes('Lint:'))).toBe(false);
-    } finally {
-      spy.mockRestore();
-    }
-  });
-
-  it('does report per section once debug mode is on', async () => {
-    init({ } as never, 'habits.md', undefined, undefined, undefined, true);      // debugMode last
-    const spy = vi.spyOn(console, 'log').mockImplementation(() => { });
-    try {
-      const app = fakeApp(FILE);
-      await lintHabitsFile(app.app as never, 'habits.md');
-      expect(spy.mock.calls.some(c => String(c[0]).includes('Lint:'))).toBe(true);
     } finally {
       spy.mockRestore();
       init({ } as never, 'habits.md', undefined, undefined, undefined, false);

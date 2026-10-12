@@ -4,6 +4,7 @@ import type { DocDiff, TrackerDoc, TrackerError, TrackerErrorKind } from '../mod
 import { deserialize } from './deserialize';
 import { serialize } from './serialize';
 import { hash32 } from './format';
+import { timerHost } from '../dom';
 
 export interface SaveOptions {
   changedMonths?: Set<string>;
@@ -157,7 +158,7 @@ const MAX_HELD_ROUNDS = 30;
  */
 export function startWatcher(app: App, path: string, handlers: WatcherHandlers): () => void {
   const debounceMs = handlers.debounceMs ?? 500;
-  let timer: ReturnType<typeof setTimeout> | null = null;
+  let timer: number | null = null;
   let heldRounds = 0;
   let stopped = false;
 
@@ -167,7 +168,7 @@ export function startWatcher(app: App, path: string, handlers: WatcherHandlers):
     if (handlers.isBusy?.() === true) {
       if (heldRounds >= MAX_HELD_ROUNDS) return;
       heldRounds++;
-      timer = setTimeout(flush, debounceMs);          // hold the reload until the save drains
+      timer = timerHost().setTimeout(flush, debounceMs);          // hold the reload until the save drains
       return;
     }
     heldRounds = 0;
@@ -180,16 +181,16 @@ export function startWatcher(app: App, path: string, handlers: WatcherHandlers):
       if (stopped) return;
       const text = await readExisting(app, path);
       if (text !== null && isOwnWrite(path, text)) return;
-      if (timer !== null) clearTimeout(timer);
+      if (timer !== null) timerHost().clearTimeout(timer);
       heldRounds = 0;
-      timer = setTimeout(flush, debounceMs);
+      timer = timerHost().setTimeout(flush, debounceMs);
     })();
   };
 
   const ref = app.vault.on('modify', onModify as (...data: unknown[]) => unknown);
   return () => {
     stopped = true;
-    if (timer !== null) clearTimeout(timer);
+    if (timer !== null) timerHost().clearTimeout(timer);
     // offref takes the reference on() handed back, and nothing else.
     app.vault.offref(ref);
   };

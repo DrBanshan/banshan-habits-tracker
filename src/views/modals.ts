@@ -235,7 +235,7 @@ export class DeleteHabitModal extends Modal {
       .addToggle(toggle => toggle.setValue(keepData).onChange(v => { keepData = v; }));
 
     new Setting(contentEl)
-      .addButton(btn => btn.setButtonText('Delete').setWarning().onClick(async () => {
+      .addButton(btn => btn.setButtonText('Delete').setDestructive().onClick(async () => {
         this.plugin.deleteHabit(this.habitName, keepData);
         this.close();
         await this.onSubmit();

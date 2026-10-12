@@ -1,6 +1,7 @@
 import type HabitTrackerPlugin from '../main';
-import type { AppState, CompletionStatus, Habit } from '../types';
+import type { AppState } from '../types';
 import { calculateStreak } from '../streak';
+import { timerHost } from '../dom';
 
 export function renderTodayView(container: HTMLElement, plugin: HabitTrackerPlugin, state: AppState): void {
   const habits = state.habits;
@@ -128,7 +129,7 @@ export function renderTodayView(container: HTMLElement, plugin: HabitTrackerPlug
     if (isTodayCompleted) checkBtn.addClass('active');
 
     // Column 3: habit name
-    const habitNameEl = card.createEl('div', { text: habit.name, cls: 'today-habit-name' });
+    card.createEl('div', { text: habit.name, cls: 'today-habit-name' });
 
     // Column 4: day blocks
     const blocksContainer = card.createEl('div', { cls: 'today-blocks-container' });
@@ -198,7 +199,7 @@ export function renderTodayView(container: HTMLElement, plugin: HabitTrackerPlug
     }
 
     // Column 5: total day count
-    const weekCountEl = card.createEl('div', { text: `${weekCount}/${numDays}`, cls: 'today-week-count-inline' });
+    card.createEl('div', { text: `${weekCount}/${numDays}`, cls: 'today-week-count-inline' });
 
     if (isTodayCompleted) {
       card.addClass('active-today');
@@ -260,7 +261,7 @@ export function renderTodayView(container: HTMLElement, plugin: HabitTrackerPlug
     e.dataTransfer.dropEffect = 'move';
     // Throttle to one layout calculation per frame
     if (rafId !== null) return;
-    rafId = window.requestAnimationFrame(() => {
+    rafId = timerHost().requestAnimationFrame(() => {
       rafId = null;
       const items = cachedItems;
       for (const item of items) {
@@ -368,20 +369,4 @@ function getContrastColor(hex: string): string {
 
 function isSameDay(date1: Date, date2: Date): boolean {
   return date1.getFullYear() === date2.getFullYear() && date1.getMonth() === date2.getMonth() && date1.getDate() === date2.getDate();
-}
-
-/**
- * Check if a habit has any completions within `days` days from the given Monday.
- */
-function hasCompletionsInRange(
-  habitCompletions: Record<string, CompletionStatus>,
-  startMonday: Date,
-  days: number,
-): boolean {
-  for (let i = 0; i < days; i++) {
-    const d = new Date(startMonday);
-    d.setDate(startMonday.getDate() + i);
-    if (habitCompletions[formatDate(d)] === 'completed') return true;
-  }
-  return false;
 }
