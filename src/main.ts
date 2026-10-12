@@ -215,23 +215,11 @@ class HabitTrackerSettingTab extends PluginSettingTab {
     this.plugin = plugin;
   }
 
-  display(): void {
-    const { containerEl } = this;
-    containerEl.empty();
-    new Setting(containerEl).setName('Habit Tracker').setHeading();
-    this.rowHabitsFilePath(new Setting(containerEl));
-    this.rowTodayViewDays(new Setting(containerEl));
-    this.rowKeepDeletedData(new Setting(containerEl));
-    this.rowEmptyTableDetection(new Setting(containerEl));
-    this.rowDebugMode(new Setting(containerEl));
-    this.rowResetDataFile(new Setting(containerEl));
-  }
-
   /**
-   * Declared for 1.13.0 and later, where the framework renders settings itself and builds the settings
-   * search from these definitions: leave them out and a user searching for one of these rows never finds it,
-   * because display() is opaque to that index. The rows come from the very builders display() uses, so the
-   * indexed text and the rendered control cannot drift apart.
+   * The framework renders settings from these definitions, and builds the settings search index from them
+   * alone: leave them out and a user searching for one of these rows never finds it. The rows come from the
+   * same builders that used to sit behind display(), which is why the indexed text and the rendered control
+   * cannot drift apart.
    */
   getSettingDefinitions(): SettingDefinitionItem[] {
     return [{
@@ -278,9 +266,9 @@ class HabitTrackerSettingTab extends PluginSettingTab {
   }
 
   /**
-   * The rows below each render into the Setting handed them, which is what lets display() and the
-   * declarative definitions above share one source. Each keeps its own change handler, since a change to
-   * any of them has to reach the store as well as the file.
+   * The rows below each render into the Setting handed them, one builder per row, shared by every path that
+   * draws settings. Each keeps its own change handler, since a change to any of them has to reach the store
+   * as well as the file.
    */
   private rowHabitsFilePath(setting: Setting): void {
     setting
