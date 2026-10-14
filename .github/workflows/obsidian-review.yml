@@ -1,0 +1,44 @@
+name: Obsidian plugin review
+
+# The community directory's own validation and scanner rulesets, enforced strictly, using the
+# official obsidianmd/obsidian-workflows action. The release half (building the assets, attesting
+# them, publishing the draft release) is already covered by release.yml, so this runs the checking
+# half only: manifest.json schema, readme and licence presence, and the scanner's stylelint and
+# eslint rulesets. The build is not skipped merely because release.yml builds too -- running this in
+# strict mode still exercises npm install and the bundle, so a build that breaks on main is caught
+# here as well as there.
+#
+# The mode stays at pr rather than release on purpose. Release mode also attests the artifacts and
+# opens a draft release, and it stops with a "Cannot create release" error unless it runs from a
+# tag ref, so it could not serve as a push or pull request check at all. scanner-lint is the switch
+# release mode forces on to obtain the directory's rulesets, and strict is what turns policy
+# findings from warnings into failures, so the pair gives the same rigour without the publishing.
+#
+# There is deliberately no push trigger. Pushing main to cut a release used to drag a review run
+# along with it, and a release asked for on its own should not summon a check nobody asked for. The
+# review therefore runs on pull requests and when started by hand from the Actions tab.
+
+on:
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  review:
+    name: Validate and lint as the directory would
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the commit
+        uses: actions/checkout@v7
+
+      - name: Review the plugin
+        uses: obsidianmd/obsidian-workflows@v1
+        with:
+          type: plugin
+          mode: pr
+          scanner-lint: true
+          strict: true
+          lint: true
